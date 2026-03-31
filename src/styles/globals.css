@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+
+@layer base {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Safe area insets for notched phones (iPhone X+) */
+  @supports (padding: max(0px)) {
+    .safe-top {
+      padding-top: max(1rem, env(safe-area-inset-top));
+    }
+
+    .safe-bottom {
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+
+    .safe-left {
+      padding-left: max(1rem, env(safe-area-inset-left));
+    }
+
+    .safe-right {
+      padding-right: max(1rem, env(safe-area-inset-right));
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
