@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 
 export default function MobileMenuToggle({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -25,9 +26,17 @@ export default function MobileMenuToggle({ children }: { children: React.ReactNo
             className="fixed inset-0 bg-black/30 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="fixed top-0 left-0 h-full w-72 bg-white z-50 shadow-lg p-6">
+          <div className="fixed top-0 left-0 h-full w-72 bg-cream z-50 shadow-lg p-6">
             <div className="flex items-center justify-between mb-8">
-              <span className="font-serif text-xl text-brand-rose">Inoya Rouge</span>
+              <div className="relative w-[22px] h-[30px]">
+                <Image
+                  src="/images/logo/inoya-rouge-logo.png"
+                  alt="Inoya Rouge"
+                  fill
+                  className="object-contain"
+                  sizes="22px"
+                />
+              </div>
               <button
                 onClick={() => setIsOpen(false)}
                 className="min-h-[44px] min-w-[44px] flex items-center justify-center"

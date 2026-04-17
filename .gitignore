@@ -9,3 +9,8 @@ node_modules/
 
 # Claude Code config
 .claude/
+
+# Project tracking
+CLAUDE.md
+UPDATES.md
+

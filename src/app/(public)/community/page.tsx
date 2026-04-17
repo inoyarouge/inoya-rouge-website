@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { Testimonial } from '@/lib/types'
 import TestimonialForm from '@/components/public/TestimonialForm'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export const metadata: Metadata = {
