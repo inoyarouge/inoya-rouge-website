@@ -10,11 +10,20 @@ const config: Config = {
     extend: {
       colors: {
         'brand-rose': '#C7365F',
-        // warm orange and leaf green to be added when extracted from logo
+        'burgundy': '#7a0000',
+        'burgundy-dark': '#7d0000',
+        'burgundy-red': '#7a001e',
+        'accent-pink': '#b80049',
+        'cream': '#fff8f6',
+        'warm-pink': '#f7ece9',
+        'peach': '#faebe5',
+        'pink-accent': '#fbdae1',
       },
       fontFamily: {
+        display: ['var(--font-display)', 'Georgia', 'serif'],
+        sans: ['var(--font-satoshi)', 'system-ui', 'sans-serif'],
+        accent: ['var(--font-newsreader)', 'Georgia', 'serif'],
         serif: ['Playfair Display', 'Georgia', 'serif'],
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

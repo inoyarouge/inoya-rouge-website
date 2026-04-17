@@ -1,5 +1,33 @@
 import type { Metadata, Viewport } from 'next'
+import localFont from 'next/font/local'
+import { Newsreader } from 'next/font/google'
 import '@/styles/globals.css'
+
+const agatho = localFont({
+  src: [
+    { path: '../../public/fonts/agatho/Agatho Light.woff2', weight: '300', style: 'normal' },
+    { path: '../../public/fonts/agatho/Agatho.woff2', weight: '400', style: 'normal' },
+  ],
+  variable: '--font-display',
+  display: 'swap',
+})
+
+const satoshi = localFont({
+  src: [
+    { path: '../../public/fonts/satoshi/Satoshi-Regular.woff2', weight: '400', style: 'normal' },
+    { path: '../../public/fonts/satoshi/Satoshi-Medium.woff2', weight: '500', style: 'normal' },
+  ],
+  variable: '--font-satoshi',
+  display: 'swap',
+})
+
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  weight: ['400', '500'],
+  variable: '--font-newsreader',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Inoya Rouge',
@@ -19,7 +47,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased bg-white text-gray-900">
+      <body className={`${agatho.variable} ${satoshi.variable} ${newsreader.variable} font-sans antialiased bg-cream text-gray-900`}>
         {children}
       </body>
     </html>

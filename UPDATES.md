@@ -1,8 +1,108 @@
+## 2026-04-18 — Update: prices set to Satoshi font
+
+**Status:** DONE
+**What was done:** 
+- Switched the main price font on the product detail page (`ShadeSelector.tsx`) from `font-serif` (Playfair Display) to `font-sans` (Satoshi) to match the brand's primary UI typography and user request.
+- Synchronized currency formatting in the shop grid (`ProductCard.tsx`) to use the `formatINR` helper, replacing hardcoded "RS." with the Rupee symbol ("₹") for consistency across the entire storefront.
+
+**Files touched:**
+- `src/components/public/ShadeSelector.tsx` — changed price font to `font-sans`.
+- `src/components/public/ProductCard.tsx` — updated shop variant to use `formatINR`.
+
+---
+
 # UPDATES.md — Inoya Rouge Project Changelog
 
 > **Claude Code: Read this file before writing any code.**
 > Add a new entry at the TOP of this file (newest first) before starting any work.
 > Format: date, summary, files touched, status, what's next.
+
+---
+
+## 2026-04-17 — Fix: discount not rendering on product detail page
+
+**Status:** DONE (verified live — HTML now contains ₹800.00 with ~~₹1,000.00~~ strikethrough and Save badge)
+
+Discount was saved correctly (admin preview showed ₹1,000 → ₹800) but the public `/shop/[slug]` page kept rendering ₹1,000 with no badge.
+
+**Root cause:** PostgREST returns a joined row as an **object** (not an array) when the FK column has a `UNIQUE` constraint. The `discounts` table has `UNIQUE(product_id)`, so `discounts(*)` resolves as a single object. Our mapping code did `((p.discounts as Discount[]) ?? [])[0]` — indexing `[0]` on an object returns `undefined`, silently dropping the discount everywhere.
+
+**Fix:** Added `normalizeDiscount(raw)` helper in `src/lib/pricing.ts` that accepts both shapes (object or array) and returns `Discount | null`. Updated all 5 sites that map the embed.
+
+Also tightened admin cache invalidation: `createProduct` / `updateProduct` now call `revalidatePath('/shop/${slug}')` so editing a discount immediately purges the detail page cache.
+
+**Files touched:**
+- `src/lib/pricing.ts` — new `normalizeDiscount()` helper
+- `src/app/(public)/page.tsx` — use `normalizeDiscount`
+- `src/app/(public)/shop/page.tsx` — use `normalizeDiscount`
+- `src/app/(public)/shop/[slug]/page.tsx` — use `normalizeDiscount` (main + related)
+- `src/app/admin/products/[id]/page.tsx` — use `normalizeDiscount`
+- `src/app/admin/products/actions.ts` — revalidate `/shop/${slug}` on create/update
+
+**What's next:** Commit + deploy to Vercel. Verify on production that discount renders on all 3 surfaces (homepage carousel, shop grid, product detail).
+
+---
+
+## 2026-04-17 — Per-product discounting system
+
+**Status:** DONE (migration applied via Supabase MCP, code complete, typecheck passes)
+
+Added a product-level discount system — admin can set a percent or flat ₹ discount with an optional active window (starts_at / ends_at) directly inside the product edit page (no new admin route, no sidebar entry). Storefront shows strikethrough original price + sale price + "-N%" badge everywhere: shop cards, homepage carousel, product detail page. WhatsApp Buy Now message surfaces the saving (`Price: ₹960.00 (was ₹1,200.00, -20%)`).
+
+**DB migration (applied):** `create_discounts_table` via MCP. New `discounts` table (one row per product, UNIQUE on `product_id`), percent/flat type, optional date window, RLS (public read; admin-only write via `admin_users`).
+
+**New files:**
+- `src/lib/pricing.ts` — single-source pricing helpers: `computePrice(product, variant)`, `isDiscountLive()`, `formatINR()`, `computePriceStandalone()` (for admin live preview).
+
+**Files modified:**
+- `src/lib/types.ts` — added `Discount` type, extended `Product` with optional `discount`
+- `src/app/admin/products/[id]/page.tsx` — joins `discounts(*)`, normalizes first row onto `product.discount`
+- `src/components/admin/ProductForm.tsx` — new `DiscountSection` below Base Price: enable checkbox, percent/flat radio, value, datetime-local start/end, live preview panel
+- `src/app/admin/products/actions.ts` — `upsertDiscount()` helper invoked from `createProduct`/`updateProduct`; validates (>0, percent ≤100), converts `datetime-local` → ISO; revalidates `/shop` and `/`
+- `src/app/(public)/shop/page.tsx`, `src/app/(public)/shop/[slug]/page.tsx` (2 queries), `src/app/(public)/page.tsx` — all queries now select `discounts(*)` and normalize first row onto `product.discount`
+- `src/components/public/ProductCard.tsx` — `computePrice` + strike-through UI in all three variants (shop, curated, default). Also centralized currency formatting through `formatINR`.
+- `src/components/public/ShadeSelector.tsx` — uses `computePrice(product, selectedVariant)`; added visible price block (was hidden before) with sale badge; recomputes on shade switch
+- `src/components/public/BuyNowModal.tsx` — dropped the `price` prop (now computes internally via `computePrice`); WhatsApp message shows discounted price + original + percent when applicable
+
+**Design rules honored:**
+- `UNIQUE(product_id)` keeps the model flat — one discount per product
+- "Live" window = `is_active AND (starts_at <= now OR null) AND (ends_at > now OR null)` — evaluated client-side via `isDiscountLive`
+- Percent discount applies to `variant.price_override` when present (not just base) — so per-shade prices honor the same % off
+- Flat discount clamps to ₹0 via `Math.max(0, …)` to prevent negatives
+
+**What's next:** Admin smoke-test in browser — create a 20% discount, verify strike-through renders on homepage + shop + detail page, verify WhatsApp message shows `(was ₹X)` line. Then mark this entry verified.
+
+---
+
+## 2026-04-17 — Buy Now WhatsApp message includes product URL
+
+**Status:** DONE
+
+Buy Now modal now appends the canonical product URL (`{origin}/shop/{slug}`) to the WhatsApp message, directly under the product name line. Origin is read from `window.location.origin` at submit time (handler runs client-side), with an `https://inoyarouge.com` fallback as an SSR/typing guard. No new env vars, no upstream prop changes.
+
+**Files touched:**
+- `src/components/public/BuyNowModal.tsx` — derive `productUrl` in `handleSubmit`; add one line to the message template.
+
+**What's next:** Smoke test — open a product page, submit Buy Now, confirm the URL renders as a tappable link in WhatsApp.
+
+---
+
+## 2026-04-17 — Product URLs: UUID → slug
+
+**Status:** IN PROGRESS (code changes complete; DB migration pending — owner must run SQL in Supabase)
+
+Replaced UUID-based product URLs (`/shop/33448964-8a51-4817-8fbb-...`) with readable slug URLs (`/shop/velvet-rouge-lipstick`). Slugs are auto-generated from product name on create and locked afterwards (no admin edit, no redirects, no SEO churn). Admin routes still use UUIDs.
+
+**Files touched:**
+- `src/lib/slug.ts` (new) — `slugify()` helper
+- `src/lib/types.ts` — added `slug: string` to `Product`
+- `src/app/admin/products/actions.ts` — `createProduct` generates unique slug (appends `-2`, `-3`, … on collision)
+- `src/app/(public)/shop/[id]/` → renamed to `src/app/(public)/shop/[slug]/` — queries now `.eq('slug', slug)`
+- `src/components/public/ProductCard.tsx` — 5 `href` templates switched from `product.id` to `product.slug`
+
+**Blocked on owner action:** Run the SQL migration (provided in the execution output) in the Supabase SQL editor to add the `slug` column + backfill + UNIQUE constraint.
+
+**What's next:** Owner runs SQL → dev-server smoke test → mark DONE.
 
 ---
 
@@ -110,6 +210,91 @@ End state: Live site at inoyarouge.com. Project complete for Module A.
 ---
 
 ## Changelog
+
+---
+
+### [2026-04-17] — Buy Now Address-Capture Modal + WhatsApp Handoff
+
+**Type:** Enhancement
+**Status:** IN PROGRESS
+
+**What was done:**
+
+Replaced the direct-redirect BUY NOW button on product detail pages with a popup that captures shipping address before handing off to WhatsApp. Visitors can fill the form manually or click "Auto-detect my address" to have their fields filled from browser geolocation (via OpenStreetMap Nominatim reverse-geocoder — no API key). On PROCEED TO ORDER, opens WhatsApp with a message containing product/quantity/shade + the full shipping address, so the fulfilment team gets everything in the first message.
+
+- Modal is client component, framer-motion fade+scale animation, Escape + backdrop-click dismiss, focus-trap on first input
+- Fields: Full Name, Phone (10-digit IN), Address Line 1, Line 2 (optional), City, State, Pincode (6-digit)
+- If product has a custom `buy_url` set, modal is bypassed and redirect goes straight to that URL (preserves existing behaviour for external checkouts)
+- No DB schema changes — address is transient, only embedded in the WhatsApp message
+
+**Files created:**
+- `src/components/public/BuyNowModal.tsx`
+
+**Files modified:**
+- `src/components/public/ShadeSelector.tsx` — BUY NOW button now opens modal
+
+**What's next:** Verify in browser (auto-detect + manual paths), then mark DONE
+
+---
+
+### [2026-04-17] — Customizable Collections Management
+
+**Type:** Enhancement
+**Status:** IN PROGRESS
+
+**What was done:**
+
+Replaced hardcoded collections (Kysmé, Liquid Allure, Kajal, etc.) with a fully database-driven system. Admin can now manage collections per category from a dedicated `/admin/collections` page. Public shop shows collection sub-filters for all categories (Lips, Eyes, Face), not just Lips.
+
+- Created `collections` table (id, category, name, sort_order) with public read + admin-only write RLS
+- Seeded existing 11 collections (3 Lips + 3 Eyes + 5 Face); "Other" remains a UI-only sentinel
+- New admin page `/admin/collections` with per-category tabs, add/edit/delete, drag-reorder
+- Product form dropdown now fetches collections from DB instead of hardcoded object
+- Rename cascades to referenced products; delete nullifies them
+- Public shop `ShopClient` accepts dynamic collections and renders sub-filter row for any category with ≥1 collection
+
+**Files created:**
+- `src/app/admin/collections/page.tsx`
+- `src/app/admin/collections/actions.ts`
+- `src/components/admin/CollectionManager.tsx`
+
+**Files modified:**
+- `src/lib/types.ts` — added `Collection` type
+- `src/components/admin/Sidebar.tsx` — added Collections nav link
+- `src/components/admin/ProductForm.tsx` — dynamic collections prop, "Other" kept as fallback option
+- `src/app/admin/products/[id]/page.tsx` — fetches collections and passes to form
+- `src/app/(public)/shop/page.tsx` — fetches collections alongside products
+- `src/components/public/ShopClient.tsx` — dynamic collection sub-filters for all categories
+
+**Database migration applied:** `create_collections_table` (via Supabase MCP)
+
+**What's next:** Verify end-to-end, mark DONE
+
+---
+
+### [2026-04-17] — Shop Page Redesigned to Match Figma Design
+
+**Type:** Enhancement
+**Status:** DONE
+
+**What was done:**
+
+Redesigned the shop page (`/shop`) to match the Figma design (node 105-202). Used the Figma API to extract the full design specification and implemented it pixel-accurately:
+
+- **Hero Banner:** Full-width hero section (442px height) with hero background image, 22% black overlay, centered "Shop" heading in Agatho display font (87px), subheading "Beauty should never come at the cost of your skin." in Satoshi (39px), and "VIEW ALL PRODUCTS" CTA button in burgundy (#7a0000)
+- **Category Tabs:** Replaced pill-style buttons with Figma's underline-style tabs — ALL PRODUCTS | LIPS | EYES | FACE, with a burgundy underline on the active tab, Satoshi 11px uppercase
+- **Product Count:** Added centered "X PRODUCTS" counter in Satoshi 9px above a subtle divider line
+- **Product Grid:** 4-column layout with 40px gap (matching Figma spacing), using the new `shop` variant of ProductCard
+- **ProductCard (shop variant):** 211:264 aspect ratio images, product name in Satoshi 20px burgundy, price in Satoshi 14px black, peach (#faebe5) DISCOVER button with burgundy text
+- **Trust Badges:** Added scrolling trust badges section below the product grid
+- **Lips Sub-filters:** Redesigned from pills to bordered rectangular buttons matching the overall minimal aesthetic
+
+**Files modified:**
+- `src/app/(public)/shop/page.tsx` — complete rewrite with hero banner, trust badges integration
+- `src/components/public/CategoryFilter.tsx` — redesigned tabs, product count, divider
+- `src/components/public/ProductCard.tsx` — added `shop` variant matching Figma spec
+
+**What's next:** Continue polish / other page refinements
 
 ---
 

@@ -1,8 +1,27 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import Link from 'next/link'
-import { deleteProduct, toggleProductActive } from '@/app/admin/products/actions'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { deleteProduct, toggleProductActive, reorderProducts } from '@/app/admin/products/actions'
+import { computeReorder } from '@/lib/dnd-helpers'
+import { Pencil, Trash2, Loader2, Check, X, GripVertical } from 'lucide-react'
 
 type ProductRow = {
   id: string
@@ -15,9 +34,187 @@ type ProductRow = {
   variant_count: number
 }
 
+function SortableProductRow({
+  product,
+  confirmDelete,
+  setConfirmDelete,
+  isPending,
+  onDelete,
+  onToggle,
+}: {
+  product: ProductRow
+  confirmDelete: string | null
+  setConfirmDelete: (id: string | null) => void
+  isPending: boolean
+  onDelete: (id: string) => void
+  onToggle: (id: string, current: boolean) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: product.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0 : 1,
+  }
+
+  const p = product
+
+  return (
+    <tr ref={setNodeRef} style={style} className="hover:bg-gray-50 transition-colors">
+      <td className="px-3 py-4 w-10">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 touch-none"
+        >
+          <GripVertical size={16} />
+        </button>
+      </td>
+      <td className="px-5 py-4 font-medium text-gray-900">{p.name}</td>
+      <td className="px-5 py-4 text-gray-600">{p.category}</td>
+      <td className="px-5 py-4 text-gray-500">{p.collection ?? '—'}</td>
+      <td className="px-5 py-4 text-gray-900">₹{p.base_price}</td>
+      <td className="px-5 py-4 text-gray-600">{p.variant_count}</td>
+      <td className="px-5 py-4">
+        <button
+          onClick={() => onToggle(p.id, p.is_active)}
+          disabled={isPending}
+          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border ${
+            p.is_active
+              ? 'bg-green-50 text-green-700 border-green-200'
+              : 'bg-gray-50 text-gray-600 border-gray-200'
+          }`}
+        >
+          {isPending ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : p.is_active ? (
+            <Check size={12} />
+          ) : (
+            <X size={12} />
+          )}
+          {p.is_active ? 'Active' : 'Inactive'}
+        </button>
+      </td>
+      <td className="px-5 py-4">
+        <div className="flex gap-2">
+          <Link
+            href={`/admin/products/${p.id}`}
+            prefetch={false}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            <Pencil size={14} className="text-gray-500" />
+            Edit
+          </Link>
+          {confirmDelete === p.id ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => onDelete(p.id)}
+                disabled={isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+              >
+                {isPending && <Loader2 size={14} className="animate-spin" />}
+                Confirm
+              </button>
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-3 py-1.5 text-xs font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 bg-white"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(p.id)}
+              disabled={isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-white border border-red-200 rounded-md hover:bg-red-50 disabled:opacity-50"
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+function DragOverlayRow({ product }: { product: ProductRow }) {
+  const p = product
+  return (
+    <table className="w-full text-sm">
+      <tbody>
+        <tr className="bg-white shadow-lg border border-gray-200 rounded-lg">
+          <td className="px-3 py-4 w-10">
+            <GripVertical size={16} className="text-gray-400" />
+          </td>
+          <td className="px-5 py-4 font-medium text-gray-900">{p.name}</td>
+          <td className="px-5 py-4 text-gray-600">{p.category}</td>
+          <td className="px-5 py-4 text-gray-500">{p.collection ?? '—'}</td>
+          <td className="px-5 py-4 text-gray-900">₹{p.base_price}</td>
+          <td className="px-5 py-4 text-gray-600">{p.variant_count}</td>
+          <td className="px-5 py-4">
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border ${
+                p.is_active
+                  ? 'bg-green-50 text-green-700 border-green-200'
+                  : 'bg-gray-50 text-gray-600 border-gray-200'
+              }`}
+            >
+              {p.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </td>
+          <td className="px-5 py-4" />
+        </tr>
+      </tbody>
+    </table>
+  )
+}
+
 export default function ProductTable({ products }: { products: ProductRow[] }) {
+  const [items, setItems] = useState(products)
+  const [activeId, setActiveId] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isReordering, startReorder] = useTransition()
+
+  useEffect(() => {
+    setItems(products)
+  }, [products])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  )
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as string)
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null)
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const prev = [...items]
+    const { reordered, updates } = computeReorder(items, active.id as string, over.id as string)
+    if (updates.length === 0) return
+
+    setItems(reordered)
+    startReorder(async () => {
+      try {
+        await reorderProducts(updates)
+      } catch {
+        setItems(prev)
+      }
+    })
+  }
 
   function handleDelete(id: string) {
     startTransition(async () => {
@@ -30,89 +227,72 @@ export default function ProductTable({ products }: { products: ProductRow[] }) {
     startTransition(() => toggleProductActive(id, !current))
   }
 
+  const activeProduct = activeId ? items.find((p) => p.id === activeId) : null
+
   return (
-    <div className="bg-white rounded shadow overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-gray-500">
-            <th className="px-4 py-3">Name</th>
-            <th className="px-4 py-3">Category</th>
-            <th className="px-4 py-3">Collection</th>
-            <th className="px-4 py-3">Price</th>
-            <th className="px-4 py-3">Shades</th>
-            <th className="px-4 py-3">Active</th>
-            <th className="px-4 py-3">Order</th>
-            <th className="px-4 py-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.length === 0 && (
-            <tr>
-              <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
-                No products yet. Add your first product.
-              </td>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+      {isReordering && (
+        <div className="px-5 py-2 bg-blue-50 border-b border-blue-100 text-xs text-blue-700 flex items-center gap-2">
+          <Loader2 size={12} className="animate-spin" />
+          Saving new order...
+        </div>
+      )}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <table className="w-full text-sm table-fixed">
+          <colgroup>
+            <col className="w-12" />
+            <col />
+            <col className="w-24" />
+            <col className="w-28" />
+            <col className="w-20" />
+            <col className="w-16" />
+            <col className="w-24" />
+            <col className="w-48" />
+          </colgroup>
+          <thead>
+            <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <th className="px-3 py-4" />
+              <th className="px-5 py-4">Name</th>
+              <th className="px-5 py-4">Category</th>
+              <th className="px-5 py-4">Collection</th>
+              <th className="px-5 py-4">Price</th>
+              <th className="px-5 py-4">Shades</th>
+              <th className="px-5 py-4">Status</th>
+              <th className="px-5 py-4">Actions</th>
             </tr>
-          )}
-          {products.map((p) => (
-            <tr key={p.id} className="border-b hover:bg-gray-50">
-              <td className="px-4 py-3 font-medium">{p.name}</td>
-              <td className="px-4 py-3">{p.category}</td>
-              <td className="px-4 py-3 text-gray-500">{p.collection ?? '—'}</td>
-              <td className="px-4 py-3">₹{p.base_price}</td>
-              <td className="px-4 py-3">{p.variant_count}</td>
-              <td className="px-4 py-3">
-                <button
-                  onClick={() => handleToggle(p.id, p.is_active)}
-                  disabled={isPending}
-                  className={`px-2 py-1 text-xs rounded ${
-                    p.is_active
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-500'
-                  }`}
-                >
-                  {p.is_active ? 'Active' : 'Inactive'}
-                </button>
-              </td>
-              <td className="px-4 py-3 text-gray-500">{p.sort_order}</td>
-              <td className="px-4 py-3">
-                <div className="flex gap-2">
-                  <Link
-                    href={`/admin/products/${p.id}`}
-                    prefetch={false}
-                    className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
-                  >
-                    Edit
-                  </Link>
-                  {confirmDelete === p.id ? (
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => handleDelete(p.id)}
-                        disabled={isPending}
-                        className="px-2 py-1 text-xs bg-red-600 text-white rounded disabled:opacity-50"
-                      >
-                        Confirm
-                      </button>
-                      <button
-                        onClick={() => setConfirmDelete(null)}
-                        className="px-2 py-1 text-xs bg-gray-200 rounded"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmDelete(p.id)}
-                      className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <SortableContext items={items.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+            <tbody className="divide-y divide-gray-200">
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-5 py-10 text-center text-gray-500">
+                    No products yet. Add your first product.
+                  </td>
+                </tr>
+              )}
+              {items.map((p) => (
+                <SortableProductRow
+                  key={p.id}
+                  product={p}
+                  confirmDelete={confirmDelete}
+                  setConfirmDelete={setConfirmDelete}
+                  isPending={isPending}
+                  onDelete={handleDelete}
+                  onToggle={handleToggle}
+                />
+              ))}
+            </tbody>
+          </SortableContext>
+        </table>
+        <DragOverlay>
+          {activeProduct ? <DragOverlayRow product={activeProduct} /> : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   )
 }

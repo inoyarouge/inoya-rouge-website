@@ -1,22 +1,43 @@
+import Image from 'next/image'
+
 const badges = [
-  'Cruelty-Free',
-  'Skin-Friendly',
-  'Paraben Conscious',
-  'Inspired by Nature',
-  'Made for Indian Skin',
+  { name: 'Cruelty Free', image: '/images/badges/cruelty-free.svg', width: 80, height: 80 },
+  { name: 'FDA Approved', image: '/images/badges/fda-approved.svg', width: 80, height: 80 },
+  { name: 'Made in India', image: '/images/badges/made-in-india.svg', width: 110, height: 64 },
+  { name: 'Chemical Free', image: '/images/badges/chemical-free.svg', width: 80, height: 80 },
+  { name: 'Vitamin E', image: '/images/badges/vitamin-e.svg', width: 80, height: 80 },
+  { name: 'Paraben Free', image: '/images/badges/paraben-free.svg', width: 80, height: 80 },
+  { name: 'Vegan', image: '/images/badges/vegan.svg', width: 95, height: 80 },
 ]
 
 export default function TrustBadges() {
   return (
-    <div className="border-y border-gray-100 py-5 px-4">
-      <div className="max-w-6xl mx-auto flex flex-wrap justify-center gap-x-8 gap-y-3 text-xs uppercase tracking-widest text-gray-500 font-medium">
-        {badges.map((badge, i) => (
-          <span key={badge} className="flex items-center gap-4">
-            {i > 0 && <span className="hidden sm:inline text-gray-200">·</span>}
-            {badge}
-          </span>
-        ))}
+    <section className="bg-[#FFF3EE] border-t border-burgundy/10 py-16 md:py-24 w-full overflow-hidden">
+      <div className="max-w-[1200px] mx-auto px-6 flex flex-col items-center justify-center">
+        <h2 className="text-burgundy font-sans text-[22px] md:text-[28px] text-center max-w-[500px] leading-tight mb-12 font-medium tracking-wide">
+          Beauty should never come at<br />the cost of your skin.
+        </h2>
+
+        {/* Badges Container */}
+        <div className="flex flex-wrap w-full items-center justify-center gap-8 md:gap-14">
+          {badges.map((badge, index) => (
+            <div 
+              key={`${badge.name}-${index}`} 
+              className="flex items-center justify-center shrink-0"
+            >
+              <div className="relative" style={{ width: badge.width, height: badge.height }}>
+                <Image
+                  src={badge.image}
+                  alt={badge.name}
+                  fill
+                  className="object-contain"
+                  sizes={`${Math.max(badge.width, badge.height)}px`}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
