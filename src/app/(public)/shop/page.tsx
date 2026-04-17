@@ -6,6 +6,7 @@ import TrustBadges from '@/components/public/TrustBadges'
 import type { Product, ProductVariant, Collection } from '@/lib/types'
 import { normalizeDiscount } from '@/lib/pricing'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 1800
 
 export const metadata: Metadata = {

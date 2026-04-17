@@ -9,6 +9,7 @@ import HomePageAnimator from '@/components/public/HomePageAnimator'
 import type { Product, ProductVariant } from '@/lib/types'
 import { normalizeDiscount } from '@/lib/pricing'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 3600
 
 // --- Skeleton fallbacks ---

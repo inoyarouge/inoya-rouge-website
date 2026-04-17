@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import TestimonialTable from '@/components/admin/TestimonialTable'
 import type { Testimonial } from '@/lib/types'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function TestimonialsPage() {

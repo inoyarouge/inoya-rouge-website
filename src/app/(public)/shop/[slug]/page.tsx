@@ -9,6 +9,7 @@ import ProductCard from '@/components/public/ProductCard'
 import type { Product, ProductVariant } from '@/lib/types'
 import { normalizeDiscount } from '@/lib/pricing'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export async function generateMetadata({

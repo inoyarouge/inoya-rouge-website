@@ -92,14 +92,14 @@ export default function ShopClient({
     result = [...result]
     if (sortBy === 'price-asc') {
       result.sort((a, b) => {
-        const priceA = a.variants?.[0]?.price ?? 0
-        const priceB = b.variants?.[0]?.price ?? 0
+        const priceA = a.variants?.[0]?.price_override ?? a.base_price ?? 0
+        const priceB = b.variants?.[0]?.price_override ?? b.base_price ?? 0
         return priceA - priceB
       })
     } else if (sortBy === 'price-desc') {
       result.sort((a, b) => {
-        const priceA = a.variants?.[0]?.price ?? 0
-        const priceB = b.variants?.[0]?.price ?? 0
+        const priceA = a.variants?.[0]?.price_override ?? a.base_price ?? 0
+        const priceB = b.variants?.[0]?.price_override ?? b.base_price ?? 0
         return priceB - priceA
       })
     }

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import ProductTable from '@/components/admin/ProductTable'
 import { Plus } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function ProductsPage() {

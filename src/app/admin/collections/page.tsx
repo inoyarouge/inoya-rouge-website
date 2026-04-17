@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import CollectionManager from '@/components/admin/CollectionManager'
 import type { Collection } from '@/lib/types'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function CollectionsPage() {
