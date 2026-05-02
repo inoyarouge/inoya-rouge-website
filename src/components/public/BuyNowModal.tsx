@@ -37,7 +37,7 @@ const EMPTY_FORM: AddressForm = {
 
 type GeoStatus = 'idle' | 'locating' | 'denied' | 'failed' | 'filled'
 
-const WHATSAPP_NUMBER = '919749611551'
+const WHATSAPP_NUMBER = '919836048717'
 
 export default function BuyNowModal({
   isOpen,
@@ -197,6 +197,7 @@ export default function BuyNowModal({
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={e => e.stopPropagation()}
+            data-lenis-prevent="true"
           >
             <div className="flex items-start justify-between mb-6">
               <div>

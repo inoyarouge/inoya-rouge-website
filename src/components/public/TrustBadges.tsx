@@ -1,5 +1,3 @@
-'use client'
-
 import Image from 'next/image'
 
 const badges = [
@@ -12,7 +10,6 @@ const badges = [
   { name: 'Vegan', image: '/images/badges/vegan.svg', width: 95, height: 80 },
 ]
 
-// Triple repetition for seamless loop on mobile
 const tickerItems = [...badges, ...badges, ...badges]
 
 export default function TrustBadges() {
@@ -23,10 +20,10 @@ export default function TrustBadges() {
           Beauty should never come <br className="md:hidden" />at the cost of your skin.
         </h2>
 
-        {/* Unified Ticker */}
         <div className="relative w-full overflow-hidden">
           <div
-            className="flex items-center gap-12 md:gap-24 w-max animate-ticker"
+            className="flex items-center gap-12 md:gap-24 w-max animate-ticker md:[--ticker-duration:35s]"
+            style={{ ['--ticker-duration' as string]: '25s' }}
             aria-hidden="true"
           >
             {tickerItems.map((badge, i) => (
@@ -46,34 +43,14 @@ export default function TrustBadges() {
             ))}
           </div>
 
-          {/* Left fade */}
           <div
             className="pointer-events-none absolute inset-y-0 left-0 w-16 md:w-32 z-10"
             style={{ background: 'linear-gradient(to right, #FFF3EE 0%, transparent 100%)' }}
           />
-          {/* Right fade */}
           <div
             className="pointer-events-none absolute inset-y-0 right-0 w-16 md:w-32 z-10"
             style={{ background: 'linear-gradient(to left, #FFF3EE 0%, transparent 100%)' }}
           />
-
-          <style jsx>{`
-            @keyframes ticker {
-              0%   { transform: translateX(0); }
-              100% { transform: translateX(-33.333%); }
-            }
-            .animate-ticker {
-              animation: ticker 25s linear infinite;
-            }
-            .animate-ticker:hover {
-              animation-play-state: paused;
-            }
-            @media (min-width: 768px) {
-              .animate-ticker {
-                animation: ticker 35s linear infinite;
-              }
-            }
-          `}</style>
         </div>
       </div>
     </section>

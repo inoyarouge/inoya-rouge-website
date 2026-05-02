@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import type { Product, ProductVariant } from '@/lib/types'
 import { computePrice, formatINR } from '@/lib/pricing'
+import { supabaseImageUrl } from '@/lib/supabase/imageUrl'
 
 function primaryImageUrl(v: ProductVariant | undefined): string | null {
   if (!v) return null
@@ -36,8 +37,9 @@ export default function ProductCard({ product, variant = 'default' }: { product:
             {currentImage ? (
               <Image
                 fill
+                quality={65}
                 className="object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
-                src={currentImage}
+                src={supabaseImageUrl(currentImage, 600)}
                 alt={product.name}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
@@ -94,7 +96,7 @@ export default function ProductCard({ product, variant = 'default' }: { product:
                 aria-label={v.shade_name}
                 aria-pressed={currentVariant?.id === v.id}
                 title={v.shade_name}
-                className={`w-[20px] h-[20px] rounded-full border ${currentVariant?.id === v.id ? 'border-burgundy' : 'border-burgundy/20'} p-[1px] hover:border-burgundy cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-burgundy focus-visible:ring-offset-2`}
+                className={`w-[20px] h-[20px] rounded-full border border-burgundy/20 p-[1px] hover:border-burgundy cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-burgundy focus-visible:ring-offset-2 ${currentVariant?.id === v.id ? 'ring-1 ring-burgundy ring-offset-1' : ''}`}
               >
                 <span
                   className="block w-full h-full rounded-full"
@@ -138,8 +140,9 @@ export default function ProductCard({ product, variant = 'default' }: { product:
             {currentImage ? (
               <Image
                 fill
+                quality={65}
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                src={currentImage}
+                src={supabaseImageUrl(currentImage, 600)}
                 alt={product.name}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               />
@@ -193,8 +196,9 @@ export default function ProductCard({ product, variant = 'default' }: { product:
         {currentVariant?.image_url ? (
           <Image
             fill
+            quality={65}
             className="object-cover group-hover:scale-105 transition-transform duration-300"
-            src={currentVariant.image_url}
+            src={supabaseImageUrl(currentVariant.image_url ?? '', 600)}
             alt={product.name}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />

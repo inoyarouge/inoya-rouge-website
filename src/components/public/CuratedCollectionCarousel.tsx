@@ -20,34 +20,24 @@ export default function CuratedCollectionCarousel({ products }: { products: Prod
     }
   }
 
-  const measureImageBox = () => {
-    if (scrollRef.current) {
-      const firstCard = scrollRef.current.firstElementChild
-      if (firstCard) {
-        // Find the image container which has the 211/264 aspect ratio
-        const imageBox = firstCard.querySelector('.aspect-\\[211\\/264\\]')
-        if (imageBox) {
-          setArrowTop((imageBox as HTMLElement).offsetHeight / 2)
-        }
-      }
-    }
-  }
-
   useEffect(() => {
     handleScroll()
 
-    // Slight delay to ensure images/layout are painted before measuring
-    const timer = setTimeout(measureImageBox, 50)
+    if (!scrollRef.current) return
+    const firstCard = scrollRef.current.firstElementChild
+    if (!firstCard) return
+    const imageBox = firstCard.querySelector('.aspect-\\[211\\/264\\]') as HTMLElement | null
+    if (!imageBox) return
 
-    const onResize = () => {
+    const observer = new ResizeObserver((entries) => {
+      const next = entries[0]?.contentRect.height
+      if (typeof next === 'number') {
+        setArrowTop(next / 2)
+      }
       handleScroll()
-      measureImageBox()
-    }
-    window.addEventListener('resize', onResize)
-    return () => {
-      window.removeEventListener('resize', onResize)
-      clearTimeout(timer)
-    }
+    })
+    observer.observe(imageBox)
+    return () => observer.disconnect()
   }, [])
 
   const handleNext = () => {

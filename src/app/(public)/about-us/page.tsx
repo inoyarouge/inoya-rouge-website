@@ -400,9 +400,36 @@ export default function OurStoryPage() {
         </div>
       </Row>
 
+      {/* The Meaning Behind Inoya Rouge — image L / text R */}
+      <Row
+        imageAlt="The meaning behind Inoya Rouge"
+        heading={<Eyebrow>The Meaning Behind Inoya Rouge</Eyebrow>}
+        src="/images/about us/meaning 1.jpeg"
+        mobileSrc="/images/mobile images/meaning 1 mobile.jpeg"
+      >
+        <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
+          <p>The name Inoya Rouge reflects the essence of the brand.</p>
+          <p>
+            <span className="font-medium">&ldquo;Inoya&rdquo;</span> represents purity, radiance,
+            and natural beauty — an idea inspired by the harmony between nature and
+            self-expression.
+          </p>
+          <p>
+            <span className="font-medium">&ldquo;Rouge&rdquo;</span> symbolises colour, confidence,
+            and timeless elegance.
+          </p>
+          <p>
+            Together, Inoya Rouge stands for beauty that is vibrant yet gentle, modern yet rooted
+            in nature. It is a name that celebrates individuality while embracing the richness of
+            colour.
+          </p>
+        </div>
+      </Row>
+
       {/* About Us — 4 alternating rows */}
       <div id="our-story">
         <Row
+          imageRight
           imageAlt="Two friends, the founders of Inoya Rouge"
           heading={<Eyebrow>Our Story</Eyebrow>}
           src="/images/about us/story 1.jpeg"
@@ -422,7 +449,6 @@ export default function OurStoryPage() {
       </div>
 
       <Row
-        imageRight
         imageAlt="Indian botanicals"
         src="/images/about us/story 2.jpeg"
         mobileSrc="/images/mobile images/story 2 mobile.jpeg"
@@ -442,6 +468,7 @@ export default function OurStoryPage() {
       </Row>
 
       <Row
+        imageRight
         imageAlt="Mother and daughters"
         src="/images/about us/story 3.jpeg"
         mobileSrc="/images/mobile images/story 3 mobile.jpeg"
@@ -459,7 +486,6 @@ export default function OurStoryPage() {
       </Row>
 
       <Row
-        imageRight
         imageAlt="Inoya Rouge — structure and soul"
         src="/images/about us/story 4.jpeg"
         mobileSrc="/images/mobile images/story 4 mobile.jpeg"
@@ -483,6 +509,7 @@ export default function OurStoryPage() {
       {/* Our Mission — 3 alternating rows */}
       <div id="our-mission" className="scroll-mt-20">
         <Row
+          imageRight
           imageAlt="Inoya Rouge mission"
           heading={<Eyebrow>Our Mission</Eyebrow>}
           src="/images/about us/mission 1.jpeg"
@@ -498,7 +525,6 @@ export default function OurStoryPage() {
         </Row>
 
         <Row
-          imageRight
           imageAlt="Inoya Rouge philosophy"
           src="/images/about us/mission 2.jpeg"
           mobileSrc="/images/mobile images/mission 2 mobile.jpeg"
@@ -520,6 +546,7 @@ export default function OurStoryPage() {
         </Row>
 
         <Row
+          imageRight
           imageAlt="Inoya Rouge — for every shade of you"
           src="/images/about us/mission 3.jpeg"
           mobileSrc="/images/mobile images/mission 3 mobile.jpeg"

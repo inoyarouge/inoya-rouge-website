@@ -3,7 +3,7 @@ import localFont from 'next/font/local'
 import { Newsreader } from 'next/font/google'
 import { Suspense } from 'react'
 import '@/styles/globals.css'
-import SmoothScrollProvider from '@/components/providers/SmoothScrollProvider'
+import SmoothScrollGate from '@/components/providers/SmoothScrollGate'
 
 const agatho = localFont({
   src: [
@@ -51,7 +51,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${agatho.variable} ${satoshi.variable} ${newsreader.variable} font-sans antialiased bg-cream text-gray-900`}>
         <Suspense fallback={children}>
-          <SmoothScrollProvider>{children}</SmoothScrollProvider>
+          <SmoothScrollGate>{children}</SmoothScrollGate>
         </Suspense>
       </body>
     </html>

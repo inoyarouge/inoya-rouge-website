@@ -7,6 +7,7 @@ import { computePriceFromOffers, formatINR, getAvailableOffers } from '@/lib/pri
 import BuyNowModal from './BuyNowModal'
 import OffersPanel from './OffersPanel'
 import { ChevronDown } from 'lucide-react'
+import { supabaseImageUrl } from '@/lib/supabase/imageUrl'
 
 interface ShadeSelectorProps {
   variants: ProductVariant[]
@@ -100,9 +101,10 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
                       }`}
                   >
                     <Image
-                      src={img.url}
+                      src={supabaseImageUrl(img.url, 160)}
                       alt={`${product.name} — ${selectedVariant?.shade_name ?? ''} thumbnail ${i + 1}`}
                       fill
+                      quality={60}
                       className="object-cover rounded-sm"
                       sizes="80px"
                     />
@@ -115,9 +117,10 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
                 {galleryImages.map((img, i) => (
                   <Image
                     key={img.id}
-                    src={img.url}
+                    src={supabaseImageUrl(img.url, 800)}
                     alt={`${product.name} — ${selectedVariant?.shade_name ?? ''}`}
                     fill
+                    quality={70}
                     className={`object-cover transition-opacity duration-300 ${i === selectedImageIndex ? 'opacity-100 relative' : 'opacity-0 absolute inset-0'
                       }`}
                     sizes="(max-width: 768px) 100vw, 50vw"
@@ -132,9 +135,9 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
               </div>
             </div>
 
-            {/* Accordion Region */}
+            {/* Desktop Accordion Region */}
             {children && (
-              <div className="w-full mt-4">
+              <div className="w-full mt-4 hidden md:block">
                 {children}
               </div>
             )}
@@ -261,6 +264,13 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
 
           </div>
         </div>
+
+        {/* Mobile Accordion Region */}
+        {children && (
+          <div className="w-full mt-12 md:hidden">
+            {children}
+          </div>
+        )}
       </div>
 
       <BuyNowModal

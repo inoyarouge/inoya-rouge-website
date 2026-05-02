@@ -129,15 +129,17 @@ export default function HomePage() {
           alt="Inoya Rouge hero"
           fill
           priority
+          quality={80}
           className="hero-image-zoom-anim hidden md:block object-cover object-[85%_80%] lg:object-[90%_80%] saturate-[.85]"
           sizes="100vw"
         />
-        {/* Mobile Image */}
+        {/* Mobile Image — loading="eager" without priority avoids double preload on desktop */}
         <Image
           src="/images/mobile images/mobile hero.jpeg"
           alt="Inoya Rouge hero mobile"
           fill
-          priority
+          loading="eager"
+          quality={80}
           className="hero-image-zoom-anim md:hidden object-cover object-center saturate-[.95]"
           sizes="100vw"
         />
@@ -247,7 +249,7 @@ export default function HomePage() {
               fill
               className="object-cover object-center"
               sizes="(max-width: 768px) 100vw, 50vw"
-              quality={100}
+              quality={80}
             />
           </div>
 
@@ -261,7 +263,7 @@ export default function HomePage() {
                 fill
                 className="object-cover object-right opacity-60 mix-blend-multiply transition-opacity duration-700"
                 sizes="100vw"
-                quality={100}
+                quality={80}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#FEF6F4]/20 to-[#FEF6F4]/60" />
             </div>
@@ -314,13 +316,15 @@ export default function HomePage() {
                 src="/images/categories/lips.jpeg"
                 alt="Lips collection"
                 fill
+                quality={75}
                 className="hidden md:block object-cover transition-transform duration-[1000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-[1.03]"
                 sizes="(max-width: 768px) 100vw, 60vw"
               />
               <Image
-                src="/images/mobile images/lips mobile.jpeg"
+                src="/images/mobile%20images/lips%20mobile.jpeg"
                 alt="Lips collection mobile"
                 fill
+                quality={65}
                 className="md:hidden object-cover transition-transform duration-[1000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-[1.03]"
                 sizes="100vw"
               />
@@ -344,13 +348,15 @@ export default function HomePage() {
                   src="/images/categories/eyes.png"
                   alt="Eyes collection"
                   fill
+                  quality={75}
                   className="hidden md:block object-cover object-[30%] md:object-center transition-transform duration-[1000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-[1.03]"
                   sizes="(max-width: 768px) 100vw, 40vw"
                 />
                 <Image
-                  src="/images/mobile images/eye mobile.jpeg"
+                  src="/images/mobile%20images/eye%20mobile.jpeg"
                   alt="Eyes collection mobile"
                   fill
+                  quality={65}
                   className="md:hidden object-cover transition-transform duration-[1000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-[1.03]"
                   sizes="100vw"
                 />
@@ -372,13 +378,15 @@ export default function HomePage() {
                   src="/images/categories/face.png"
                   alt="Face collection"
                   fill
+                  quality={75}
                   className="hidden md:block object-cover object-[70%] md:object-center transition-transform duration-[1000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-[1.03]"
                   sizes="(max-width: 768px) 100vw, 40vw"
                 />
                 <Image
-                  src="/images/mobile images/face mobile.jpeg"
+                  src="/images/mobile%20images/face%20mobile.jpeg"
                   alt="Face collection mobile"
                   fill
+                  quality={65}
                   className="md:hidden object-cover transition-transform duration-[1000ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-[1.03]"
                   sizes="100vw"
                 />
@@ -406,7 +414,7 @@ export default function HomePage() {
             fill
             className="hidden lg:block object-cover object-center blur-[0.6px]"
             sizes="100vw"
-            quality={100}
+            quality={80}
           />
           {/* Mobile Image */}
           <div className="lg:hidden absolute inset-0">
@@ -416,7 +424,7 @@ export default function HomePage() {
               fill
               className="object-cover object-center blur-[0.6px]"
               sizes="100vw"
-              quality={100}
+              quality={80}
             />
           </div>
         </div>
@@ -438,7 +446,7 @@ export default function HomePage() {
               fill
               className="object-contain object-center"
               sizes="100vw"
-              quality={100}
+              quality={80}
               priority
             />
           </div>
@@ -459,7 +467,7 @@ export default function HomePage() {
                 fill
                 className="object-contain object-center"
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                quality={100}
+                quality={80}
               />
             </div>
           </div>

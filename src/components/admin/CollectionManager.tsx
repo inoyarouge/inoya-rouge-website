@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import type { Collection } from '@/lib/types'
 import {
   DndContext,
@@ -203,10 +203,6 @@ export default function CollectionManager({
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isReordering, startReorder] = useTransition()
-
-  useEffect(() => {
-    setItems(collections)
-  }, [collections])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
