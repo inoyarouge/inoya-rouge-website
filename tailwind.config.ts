@@ -18,6 +18,8 @@ const config: Config = {
         'warm-pink': '#f7ece9',
         'peach': '#faebe5',
         'pink-accent': '#fbdae1',
+        'charcoal': '#333333',
+        'warm-tan': '#EBD9C8',
       },
       fontFamily: {
         display: ['var(--font-display)', 'Georgia', 'serif'],
@@ -30,6 +32,15 @@ const config: Config = {
         'gradient-conic':
           'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
+      keyframes: {
+        marquee: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' }, // Assuming content is duplicated
+        }
+      },
+      animation: {
+        marquee: 'marquee 15s linear infinite',
+      }
     },
   },
   plugins: [],

@@ -1,3 +1,396 @@
+## 2026-05-02 — Fix: Vercel build failed prerendering `/_not-found` (useSearchParams Suspense bailout)
+
+**Status:** DONE
+
+Vercel deploy at 17:21:05 failed with `useSearchParams() should be wrapped in a suspense boundary at page "/404"` → `Error occurred prerendering page "/_not-found"` → exit code 1. Phase 6 (deploy) was blocked.
+
+Root cause: [src/components/providers/SmoothScrollProvider.tsx:14](src/components/providers/SmoothScrollProvider.tsx#L14) calls `useSearchParams()` and is rendered by the **root** layout at [src/app/layout.tsx:52](src/app/layout.tsx#L52) without a Suspense boundary. The route-group layouts at [src/app/(public)/layout.tsx](src/app/(public)/layout.tsx) and `src/app/admin/layout.tsx` already wrap their `useSearchParams` consumer (`NavigationProgress`) — but `/_not-found` is rendered directly under the root layout (it doesn't sit inside any route group), so the unwrapped provider above it forced a CSR bailout and broke static prerendering for that one page.
+
+Fix: wrapped `<SmoothScrollProvider>{children}</SmoothScrollProvider>` in `<Suspense fallback={children}>` in the root layout, and added `import { Suspense } from 'react'`. Same pattern the route-group layouts use for `NavigationProgress`. Fallback is `children` (not `null`) so page content still renders during the brief client-only suspension on initial hydration — the provider only adds Lenis smooth scroll, it does not gate rendering.
+
+**Files touched:**
+- [src/app/layout.tsx](src/app/layout.tsx) — added `Suspense` import; wrapped the `<SmoothScrollProvider>` invocation in `<Suspense fallback={children}>`
+
+Not changed: `SmoothScrollProvider` itself (the `useSearchParams` dependency in the `lenis.scrollTo(0)` effect at [SmoothScrollProvider.tsx:33-37](src/components/providers/SmoothScrollProvider.tsx#L33-L37) is preserved — it re-triggers scroll-to-top when query params change, e.g. `?shade=rose`). `NavigationProgress` was already correctly wrapped at every layout level and inside [not-found.tsx:33-35](src/app/not-found.tsx#L33-L35).
+
+**Verification:** `npm run build` ran locally and completed `Generating static pages (15/15)` with `/_not-found` listed as `○ (Static)` (171 B, 106 kB First Load JS) — was previously failing prerender. Phase 6 deploy unblocked; pushing this commit should let the Vercel build succeed.
+
+---
+
+## 2026-05-02 — Remove unused variant `description` field
+
+**Status:** DONE
+
+The `description` field on `product_variants` (per-shade short copy) was wired into the schema, the `ProductVariant` type, and the admin `VariantForm` textarea, but never rendered anywhere on the public site — not in `ShadeSelector`, not in `BuyNowModal`, not in `ProductCard`, not on the product detail page. It was a write-only field with zero customer-facing presence.
+
+This reverses the prior keep-decision noted at [UPDATES.md:890](UPDATES.md#L890) ("shade-specific descriptions are valuable"). Decision now: shade-level copy isn't worth the admin effort, so the field is dropped from the codebase entirely instead of building the missing display.
+
+**Files touched:**
+- [src/lib/types.ts](src/lib/types.ts) — removed `description: string | null` from `ProductVariant`
+- [src/components/admin/VariantForm.tsx](src/components/admin/VariantForm.tsx) — dropped the `description` state, the `formData.set('description', ...)` line, and the entire `<label>`/`<textarea>` block from the form UI
+- [src/app/admin/(protected)/products/actions.ts](src/app/admin/(protected)/products/actions.ts) — removed the `description: ...` keys from both the `createVariant` INSERT and the `updateVariant` UPDATE objects
+- [plan.md](plan.md) — removed the `description` row from the `product_variants` table documentation
+
+Not changed: the public components (`ShadeSelector`, `BuyNowModal`, `ProductCard`, etc.) never referenced the field. All `select('*')` callers on `product_variants` ([shop](src/app/(public)/shop/page.tsx), [shop/[slug]](src/app/(public)/shop/[slug]/page.tsx), [shop/lips|eyes|face](src/app/(public)/shop/lips/page.tsx), [home](src/app/(public)/page.tsx), [admin product edit](src/app/admin/(protected)/products/[id]/page.tsx)) keep working — wildcard select just returns an extra column nothing reads. Historical UPDATES.md entries that mention variant description ([line 801](UPDATES.md#L801), [line 890](UPDATES.md#L890)) are preserved as written.
+
+**Database column:** the `description` column still exists in Supabase. To drop it permanently, run this in the Supabase dashboard SQL editor:
+
+```sql
+ALTER TABLE product_variants DROP COLUMN description;
+```
+
+Safe to defer — leaving the column in place causes no functional or performance issue now that nothing reads or writes it.
+
+**Verification:** `npm run build` (type-check + production build) must pass — the type removal will surface any missed reader. Smoke test admin: `/admin/products` → open a product → open a variant → confirm the Description textarea is gone and saving still works. Smoke test public: any `/shop/[slug]` page → shade selector and Buy Now modal render identically to before.
+
+---
+
+## 2026-05-02 — Fix: shade swatch click on Shop card triggered product-page navigation ("infinite loading")
+
+**Status:** DONE
+
+User reported that clicking any of the 4 shade swatches under a product card on `/shop` would route the page into `/shop/[slug]` and get stuck on the product-detail loading skeleton.
+
+Root cause was a structural bug in [src/components/public/ProductCard.tsx](src/components/public/ProductCard.tsx) shop variant: the swatch `<div>`s were rendered **inside** the wrapping `<Link href="/shop/${slug}">`. Clicks bubbled up to the `<a>`, and Next.js App-Router `<Link>`'s own onClick → `router.push` fired. The existing `e.preventDefault()` on the swatch handler was unreliable in that nested-interactive layout. The "infinite loading" was just `src/app/(public)/shop/[slug]/loading.tsx` shown while the SSR (`dynamic = 'force-dynamic'`) detail page fetched.
+
+Fix: closed the wrapping `<Link>` after the price block, and moved the swatches block out as a sibling of the `<Link>` (still inside the outer card flex column, with `mt-auto` preserved on the swatches wrapper so the `CHOOSE SHADE` button stays pinned to the bottom). Converted each swatch from `<div>` to `<button type="button">` with `aria-label`, `aria-pressed`, focus-visible ring, and `e.stopPropagation()` on click (kept onMouseEnter to retain the existing hover-preview behavior). Image, name, price, and the explicit CHOOSE SHADE button still navigate to the detail page.
+
+**Files touched:**
+- [src/components/public/ProductCard.tsx](src/components/public/ProductCard.tsx) — restructured the `variant === 'shop'` branch so swatches sit between the (now image+name+price-only) `<Link>` and the `CHOOSE SHADE` `<Link>`. Replaced the `<div>` swatches with `<button>`s. Removed `e.preventDefault()` (no longer in an anchor); kept `stopPropagation`.
+
+Not changed: `default` and `curated` variants of `ProductCard` (no swatches), `ShadeSelector` on the detail page, the `[slug]` loading skeleton, or any data fetching.
+
+**Verification:** dev-server smoke test — open `/shop`, hover a swatch (image preview switches), click a swatch (image switches, URL stays `/shop`, no loading screen). Click the product image / name / `CHOOSE SHADE` button — navigates to `/shop/[slug]`. Tab to a swatch and press Enter/Space — shade updates, no nav. Mobile viewport tap — no nav. `npm run build` passes type-check.
+
+---
+
+## 2026-05-02 — Multi-image upload at shade creation time
+
+**Status:** DONE
+
+User flow before: creating a new shade only allowed a single image via `ImageUploader`; to add more images you had to save the shade first, then re-open it to use `VariantImageGallery`. User wanted to add multiple images during creation in one step.
+
+Implementation: in [src/components/admin/VariantForm.tsx](src/components/admin/VariantForm.tsx), the create-mode UI now stages multiple `File` objects client-side (with `URL.createObjectURL` previews) until the user clicks "Add Shade". On submit, `createVariant` runs first to get the new variant ID, then `uploadVariantImages(productId, newId, fd)` uploads the staged files in a single batch. The existing `syncVariantPrimaryImage` call inside `uploadVariantImages` populates the variant's `image_url` from the first uploaded image, so the legacy single-image field stays in sync without any backend changes. Pending preview object URLs are revoked on unmount to avoid leaks. Validation (allowed types, 5MB limit) mirrors `VariantImageGallery`. Files can be removed from the staging grid before submit. The single-image `ImageUploader` is no longer used in the create path.
+
+**Files touched:**
+- [src/components/admin/VariantForm.tsx](src/components/admin/VariantForm.tsx) — replaced `ImageUploader` with a multi-file staging UI for new variants; added `pendingFiles` / `pendingPreviews` state, `handlePendingFiles`, `removePendingAt`, an `useEffect` cleanup for object URLs, and an extra step in `handleSubmit` that batch-uploads after `createVariant` returns. Dropped the unused `imageUrl` state and `ImageUploader` import.
+
+Not changed: server actions ([src/app/admin/(protected)/products/actions.ts](src/app/admin/(protected)/products/actions.ts)) — `createVariant` and `uploadVariantImages` already supported the two-step flow; the only adjustment was on the client. `ImageUploader` itself is left intact (still used elsewhere; not removing it for a follow-up).
+
+**Verification:** dev-server smoke test — open a product, click "Add Shade", select 3 images via the file picker (or in two separate clicks), verify previews render with the first marked "Primary"; remove one preview; click "Add Shade" and confirm the form closes, the new shade appears in the list with all selected images attached, and re-opening the shade shows them in `VariantImageGallery` in the order picked. Also confirm `image_url` (the single-image legacy field) reflects the first upload by checking the shade's swatch on the public product page.
+
+---
+
+## 2026-05-02 — Fix: variant images appearing to "replace" each other on multi-upload
+
+**Status:** DONE
+
+User reported that uploading multiple images to a shade in the admin panel sometimes caused a previously-uploaded image to disappear from the grid, as if the new image had replaced it. The DB rows and storage objects were always intact — only the local UI state was being clobbered until a hard refresh restored the gallery.
+
+Root cause was in [src/components/admin/VariantImageGallery.tsx](src/components/admin/VariantImageGallery.tsx): a `useEffect` was syncing `items` from the `initialImages` prop on every parent render. Because `uploadVariantImages` calls `revalidatePath` ([src/app/admin/(protected)/products/actions.ts:514](src/app/admin/(protected)/products/actions.ts#L514)), the parent server component refetches and passes a new `initialImages` array reference. If the user kicked off a second upload before the RSC payload landed (or if a slightly-stale snapshot streamed in mid-flight), the effect overwrote the optimistic local state and the second image visually vanished.
+
+Fix: removed the `useEffect` that resyncs from `initialImages`, and removed the now-unused `useEffect` import. Local state is initialized once from `initialImages` via `useState`, then the existing optimistic updates in `handleFiles` / `handleDelete` / `handleDragEnd` are authoritative. Switching shades remounts the gallery (different variant in `VariantForm`), so per-variant initial state still flows correctly on mount.
+
+**Files touched:**
+- [src/components/admin/VariantImageGallery.tsx](src/components/admin/VariantImageGallery.tsx) — dropped the prop-sync `useEffect` (3 lines) and trimmed the import.
+
+Not changed: [src/app/admin/(protected)/products/actions.ts](src/app/admin/(protected)/products/actions.ts) — `uploadVariantImages` is sequential, computes `sort_order` correctly, and the `Date.now()_${i}` storage path is collision-free within a batch. No data corruption, just a UI race.
+
+**Verification:** dev-server smoke test — open a product with a shade, add 3 images one-by-one rapidly, confirm none disappear; add 3 images at once via multi-select; delete and reorder still work; hard-refresh shows the same set in the same order; switching shades shows the right variant's images.
+
+---
+
+## 2026-04-29 — Our Story page redesigned to match Figma "About Us" design
+
+**Status:** IN PROGRESS
+
+Rebuild of `/our-story` against Figma node `241:5` in file `fxVWLAnNKcY4SUCRz52ro1`. Replaces the gray placeholder card-grid layout with the brand's editorial alternating image/text rhythm — cream background, burgundy Agatho display headings, Satoshi body, founders' actual narrative copy.
+
+Sections (top → bottom):
+- Hero band (cream): "ABOUT US" pill + "Our Story" Agatho 54px burgundy + tagline
+- Manifesto quote (Agatho Bold 40px burgundy)
+- About Us essay (7 paragraphs + signature line)
+- Our Clean Beauty Promise (image L / text R)
+- Our Products (5 bulleted SVG-icon rows / image R)
+- Our Ingredients (2 alternating rows, 4 paragraphs total)
+- What Makes Us Different (2 alternating rows with 4 sub-headings)
+- Our Story (4 alternating image/text rows — founders' personal narrative)
+- Our Mission (3 alternating rows ending in italic tagline)
+- Our Team (eyebrow + placeholder block)
+
+**Files touched:**
+- `src/app/(public)/our-story/page.tsx` — full body rewrite. Kept `metadata`, `revalidate = false` (SSG), and `<PromotionBannerResolver />`. All copy lifted verbatim from Figma. Bullets use inline `<svg>` glyphs (no asset pipeline). Signature is Newsreader italic text (no asset upload). All section images reuse `/images/about/about-image.jpeg` with a TODO for brand-supplied finals.
+
+**Reused infra (no edits):**
+- Tailwind tokens: `bg-cream`, `text-burgundy`, `font-display` (Agatho), `font-sans` (Satoshi), `font-accent` (Newsreader) — all already in `tailwind.config.ts`.
+- Fonts already wired in `src/app/layout.tsx`.
+- `(public)` layout already provides Navbar / Footer / CookieNotice — Figma's nav+footer ignored.
+
+**Verification:** `npm run build` to confirm `/our-story` renders as `○ Static`; dev-server smoke test at 375 / 768 / 1280 viewports; confirm mobile collapses every 2-col row to image-on-top stacked.
+
+---
+
+## 2026-04-29 — Cookie notice + accurate privacy policy section
+
+**Status:** DONE
+
+User asked what cookies the site uses and whether a cookie consent prompt was needed. Audit found: site uses only Supabase auth cookies (strictly necessary) and one `sessionStorage` flag for the dismissable promo banner. Zero analytics, zero tracking, zero third-party scripts.
+
+Decision: rather than add a misleading Yes/No consent banner (both buttons would do nothing because there are no non-essential cookies), add a small one-time informational notice and rewrite the privacy policy section to reflect reality.
+
+- **New:** [src/components/public/CookieNotice.tsx](src/components/public/CookieNotice.tsx) — slim bottom-pinned bar shown on first visit. Stores acknowledgment in `localStorage` under `inoya_cookie_notice_ack` so it appears once per device. `z-[55]` (below promo banner's `z-[60]`). Brand-rose "Got it" button at `min-h-[44px]` per touch-target rule. Privacy policy link inline.
+- **Modified:** [src/app/(public)/layout.tsx](src/app/(public)/layout.tsx) — mount `<CookieNotice />` after `<Footer />`. Public layout only — admin layout intentionally untouched.
+- **Modified:** [src/components/public/PrivacyPolicyContent.tsx](src/components/public/PrivacyPolicyContent.tsx) section 02 — replaced generic boilerplate with accurate text covering Supabase auth cookies, the `localStorage` flag for this notice, and the `sessionStorage` flag for the promo banner. Explicitly states no analytics/advertising/tracking and no third-party data sharing for marketing.
+
+This is the first `localStorage` usage on the site; previously only `sessionStorage` was used (in `PromotionBanner`).
+
+Not changed: [src/middleware.ts](src/middleware.ts) (Supabase auth cookies are essential, no consent gating needed) and [src/components/public/PromotionBanner.tsx](src/components/public/PromotionBanner.tsx) (sessionStorage usage is functional, no consent needed).
+
+If analytics, advertising pixels, or any third-party tracking is added later (Vercel Analytics, Meta Pixel, Google Ads, etc.), this notice should be upgraded to a real consent banner with conditional script loading.
+
+**Verification:** dev-test in incognito to confirm the notice appears at bottom on first visit, "Got it" dismisses and persists across reloads, clearing localStorage re-shows it, the notice is absent on `/admin/*` routes, and the rewritten privacy section renders on `/privacy-policy`.
+
+---
+
+## 2026-04-18 — Close admin panel auth bypass
+
+**Status:** DONE
+
+User reported: clicking any sidebar menu item in the admin panel entered the panel without a password. Root cause was layered — none of middleware, admin layout, or login form actually checked `admin_users` membership, and middleware failed open when Supabase env vars were missing (which was the likely trigger given the recent Vercel deploy).
+
+Fix:
+- **New:** [src/lib/auth/requireAdmin.ts](src/lib/auth/requireAdmin.ts) — shared guard that validates the session is in `admin_users` and redirects to `/admin/login` otherwise. Wraps the Supabase calls in try/catch so any failure fails closed.
+- **New:** [src/app/admin/(public)/layout.tsx](src/app/admin/(public)/layout.tsx) — passthrough layout for the `(public)` route group so the login page does not inherit the protected admin layout.
+- **Moved:** `src/app/admin/login/page.tsx` → `src/app/admin/(public)/login/page.tsx`. URL is still `/admin/login` — `(public)` is a route group and does not affect the path. This was required to avoid a redirect loop once the protected layout calls `requireAdmin()`.
+- **Modified:** [src/app/admin/layout.tsx](src/app/admin/layout.tsx) — calls `await requireAdmin()` before the testimonial count query. This is the authoritative gate: even if middleware is misconfigured again, every protected page render runs this guard.
+- **Modified:** [src/middleware.ts](src/middleware.ts) — (a) fails closed on `/admin/*` when Supabase env vars are missing (was returning `next()` unconditionally), (b) also queries `admin_users` to verify membership, not just that a user exists, (c) wraps the admin-path logic in try/catch so any unexpected error redirects to login.
+- **Modified:** `src/app/admin/(public)/login/page.tsx` — after `signInWithPassword` succeeds, queries `admin_users`; if the logged-in user is not an admin, signs them out and shows the same generic `"Invalid credentials"` message (per CLAUDE.md, login must not leak whether an email exists or is an admin).
+
+Relied on existing RLS policy on `admin_users` that allows `auth.uid() = user_id` self-SELECT (plan.md:175-177) — an authenticated user can read only their own row, which is all these checks need.
+
+Not done (out of scope): the inline admin checks duplicated across `src/app/admin/*/actions.ts`. They already use the correct pattern; factoring them through `requireAdmin()` is a follow-up.
+
+**Verification:** see plan file for full test matrix (logged-out direct URL, non-admin user, admin happy path, sidebar click after logout, missing env var simulation, login message leak check, admin server action smoke test).
+
+---
+
+## 2026-04-18 — Loading indicators + remove force-dynamic from ISR pages
+
+**Status:** DONE
+
+Visitor-reported issue: clicks felt slow and there was no feedback during navigation. Two causes, both fixed.
+
+**1. Structural — restored ISR on homepage and shop:**
+- [src/app/(public)/page.tsx](src/app/(public)/page.tsx) — removed `export const dynamic = 'force-dynamic'`; kept `revalidate = 3600`. Homepage now serves from ISR cache per CLAUDE.md spec instead of full SSR on every request.
+- [src/app/(public)/shop/page.tsx](src/app/(public)/shop/page.tsx) — removed `force-dynamic`, removed `unstable_noStore` import and its `noStore()` call. Shop now serves from ISR cache with `revalidate = 1800`.
+- `/shop/[slug]` left on SSR intentionally (stock/availability must be fresh per spec).
+
+**2. Cosmetic — loading feedback on every click:**
+
+Files created (skeletons for every public route, matching the existing inline skeleton style — plain Tailwind `bg-gray-200 animate-pulse`):
+- `src/app/(public)/loading.tsx`
+- `src/app/(public)/shop/loading.tsx`
+- `src/app/(public)/shop/[slug]/loading.tsx` — hero + shade swatch + accordion skeleton (the slowest route, highest impact)
+- `src/app/(public)/our-story/loading.tsx`
+- `src/app/(public)/community/loading.tsx`
+- `src/app/(public)/contact/loading.tsx`
+- `src/app/(public)/policies/loading.tsx`
+
+Top-of-viewport navigation progress bar (covers the ~100ms gap before `loading.tsx` renders):
+- `src/components/public/NavigationProgress.tsx` — 2px brand-rose bar; listens for same-origin link clicks to show immediately, hides on `pathname`/`searchParams` change. No npm dependency.
+- Mounted in [src/app/(public)/layout.tsx](src/app/(public)/layout.tsx) and [src/app/admin/layout.tsx](src/app/admin/layout.tsx), each wrapped in `<Suspense fallback={null}>` because it uses `useSearchParams`.
+
+**3. Buy Now submit pending state:**
+- [src/components/public/BuyNowModal.tsx](src/components/public/BuyNowModal.tsx) — added `isSubmitting` local state. Submit button is disabled during submit, shows inline `animate-spin` circle, and swaps label to "Sending…". Prevents double-tap and tells the user something is happening.
+
+**4. Admin forms — verified existing behaviour:**
+- [src/components/admin/ProductForm.tsx:268-272](src/components/admin/ProductForm.tsx#L268-L272) and [src/components/admin/VariantForm.tsx:201-205](src/components/admin/VariantForm.tsx#L201-L205) already wire `useTransition`'s `isPending` to `disabled` + spinner + "Saving..." label. No change needed.
+
+**Verification:**
+- Dev server: clicking into Shop now flashes the shop skeleton; clicking a product flashes the detail skeleton (hero block + shade swatch row).
+- Second visit to Home after visiting Shop is near-instant (ISR cache hit, confirming `force-dynamic` removal took effect).
+- Buy Now submit shows "Sending…" with spinner.
+- Admin Save shows "Saving…" with spinner.
+- Need to run `npm run build` to confirm `/` and `/shop` appear as ISR (not λ Dynamic) in the build output.
+
+**Next:** keep Phase 6 deploy work going — this patch is independent of the deploy blockers.
+
+---
+
+## 2026-04-18 — Multi-image upload per shade (variant gallery)
+
+**Status:** DONE (migration applied via Supabase MCP, backfill verified, code complete)
+
+Each shade (product variant) now supports a full image gallery (multi-image upload, reorder via drag-and-drop, delete). The primary image is always the first in the sort order. The variant's existing `image_url` column is kept continuously in sync with whichever gallery row has `sort_order = 0`, so every existing single-image consumer (shop grid, homepage carousel, admin list thumbnail, legacy queries) keeps working unchanged.
+
+On the public product detail page, the thumbnail rail is now **per-shade** (not one-thumbnail-per-shade). Switching shades swaps the rail to the new shade's images and resets the main image to index 0; clicking a thumbnail within the rail swaps the main image via opacity-fade (CLAUDE.md rule preserved).
+
+**DB migration (applied — `add_variant_images_table`):**
+```sql
+CREATE TABLE variant_images (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  variant_id UUID NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
+  storage_path TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX variant_images_variant_idx ON variant_images(variant_id, sort_order);
+ALTER TABLE variant_images ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "variant_images_public_read" ON variant_images FOR SELECT USING (true);
+CREATE POLICY "variant_images_admin_all"   ON variant_images FOR ALL
+  USING (auth.uid() IN (SELECT user_id FROM admin_users));
+-- Backfill: 4 existing variants with image_url → 4 variant_images rows.
+```
+
+**Files created:**
+- `src/components/admin/VariantImageGallery.tsx` — dnd-kit sortable grid with multi-file upload, per-tile delete, "Primary" badge on the first tile. Reuses the 5 MB / JPEG+PNG+WebP validation constants.
+
+**Files modified:**
+- `src/lib/types.ts` — new `VariantImage`; `ProductVariant` gains optional `images?: VariantImage[]`.
+- `src/app/admin/products/actions.ts` — `uploadVariantImages`, `deleteVariantImage`, `reorderVariantImages`; `deleteVariant` now batch-removes all gallery storage objects; a private `syncVariantPrimaryImage()` keeps `product_variants.image_url` pointed at the current sort-0 row after every mutation.
+- `src/components/admin/VariantForm.tsx` — for existing variants, the image field renders `VariantImageGallery`; for a brand-new (unsaved) variant, the old single-image `ImageUploader` remains with a "Save the shade to add more images" hint (agreed UX flow).
+- `src/app/admin/products/[id]/page.tsx` — select now pulls `variant_images(*)`; mapped onto `variant.images` sorted by `sort_order`.
+- `src/app/(public)/shop/[slug]/page.tsx` — same: PDP query pulls `variant_images(*)`.
+- `src/components/public/ShadeSelector.tsx` — new local `selectedImageIndex` state; `galleryImages` derived from `selectedVariant.images` (fallback `[{ url: image_url }]` for legacy rows). Thumbnail rail renders the selected shade's gallery; main image area opacity-swaps within that gallery. Switching shades resets the image index via `useEffect`.
+
+**Design rules honored:**
+- `image_url` kept in sync with sort-0 row → zero impact on `ProductCard`, homepage, shop grid (no query changes needed there).
+- `ON DELETE CASCADE` handles row cleanup when a variant is deleted; storage paths are stored explicitly so we can remove Supabase Storage objects in one batch.
+- Opacity-swap preserved *within* the selected shade's image set.
+
+**Verify:**
+1. Admin → Products → open any product → open a shade: gallery shows the backfilled image as Primary.
+2. Upload 2–3 more (mixed JPEG/PNG/WebP; try one >5 MB — expect rejection with filename).
+3. Drag to reorder → refresh → order persists; Primary badge moves to whatever ends up first.
+4. Delete the Primary → next image auto-promotes; run `SELECT image_url FROM product_variants WHERE id = '…'` via MCP to confirm sync.
+5. Delete a non-Primary → storage object is gone from the `product-images` bucket.
+6. Create a brand-new shade with one image → save → re-open → gallery renders that one image; upload more.
+7. `/shop/<slug>` → selecting a shade swaps the thumbnail rail to that shade's gallery; clicking a thumbnail fades the main image; swapping shades resets main to index 0.
+8. `/shop` and `/` → ProductCard thumbnails unchanged (still the primary image per shade).
+9. Delete a variant → `SELECT COUNT(*) FROM variant_images WHERE variant_id = '…'` returns 0 (cascade) and bucket objects are gone.
+
+**What's next:** Commit + deploy; smoke test on Vercel preview.
+
+---
+
+## 2026-04-18 — User-selectable offer stacking on PDP
+
+**Status:** DONE
+
+Shoppers can now apply multiple offers simultaneously on the product detail page. Reverses the previous "best discount wins / one at a time" rule in favour of explicit, user-driven stacking.
+
+**Stacking rule:** offers apply sequentially on the running price. Percent offers first (highest % first), then flat (largest ₹ first) — deterministic regardless of click order. Final price clamps at ₹0.
+
+**Files touched:**
+- `src/lib/pricing.ts` — replaced single-offer `computePriceFromOffer` with `computePriceFromOffers(basePrice, offers[])` which sorts and applies offers sequentially.
+- `src/components/public/ShadeSelector.tsx` — state is now `appliedOfferIds: string[]`. Added `useEffect` that drops stale IDs when shade switch removes variant-scoped offers. `appliedOfferLabel` for WhatsApp joins labels with `+`.
+- `src/components/public/OffersPanel.tsx` — new props `appliedOfferIds` + `onToggle` + `savings`. Applied buttons are no longer disabled (tap-to-remove). Added a summary row showing applied count and total ₹ saved.
+
+**Data model:** unchanged — no new columns. Stacking is pure client-side UX.
+
+**Verify:**
+1. Open a product at `/shop/<slug>` with multiple live offers.
+2. Click "Available Offers" → tap two offers → price drops further on each; "2 offers applied — Save ₹X" appears.
+3. Tap an applied offer → it removes cleanly.
+4. Switch shades → any variant-scoped applied offer silently drops.
+5. Math check: ₹1000 base + 20% promo + ₹100 flat → `(1000 × 0.8) − 100 = ₹700`.
+6. Edge: 100% + ₹50 flat → clamps at ₹0.
+7. Buy Now → WhatsApp message lists both labels joined with `+`.
+
+---
+
+## 2026-04-18 — Category-scope promotion banner (page-aware)
+
+**Status:** DONE
+
+Category-scope promotions now surface as banners on pages where the category is relevant. Rule: more-specific wins — a category banner replaces the site-wide banner on matching pages; only one banner at a time.
+
+**Changes:**
+- NEW `src/components/public/PromotionBannerResolver.tsx` — server component that fetches active promotions, filters with `isPromotionLive()`, prefers a matching `scope='category'` promotion when a `category` prop is passed, otherwise falls back to the best `scope='all'` promotion. Renders `<PromotionBanner>` or nothing.
+- `src/app/(public)/layout.tsx` — removed `getBannerPromotion()` + `<PromotionBanner>`. Banner selection moved to page level so it can be category-aware.
+- Resolver wired into every public page:
+  - `/` (home), `/our-story`, `/community`, `/contact`, `/policies` → no category, falls back to site-wide.
+  - `/shop` → accepts `searchParams.category`, passes it through only if it's one of `Lips`/`Eyes`/`Face`.
+  - `/shop/[slug]` → passes `product.category`.
+
+No DB / type / `PromotionBanner` changes.
+
+**Verify:**
+1. Admin → create two promos: Winter Sale (scope=All, 10%), Lips Love (scope=Category, scope_value=Lips, 20%).
+2. `/` → Winter Sale · `/shop` → Winter Sale · `/shop?category=Lips` → Lips Love · `/shop?category=Eyes` → Winter Sale · Lips product page → Lips Love · Eyes product page → Winter Sale · delete Lips Love → every page shows Winter Sale.
+
+---
+
+## 2026-04-18 — Promotions (campaigns) + Click-to-Apply offers UX
+
+**Status:** DONE (migration applied via Supabase MCP, code complete, typecheck passes)
+
+Building two intertwined features:
+1. **Admin Promotions** — site-wide / category-wide campaigns (e.g. Holiday Sale 20% off Lips). New `promotions` table, admin CRUD at `/admin/promotions`. Independent from per-product discounts.
+2. **Customer Click-to-Apply Offers** — wires up the previously-placeholder "AVAILABLE OFFERS" button on PDP. Price now shows at full base price initially; clicking the button reveals available offers (per-product discount + active matching promotion) with individual "Apply Offer" buttons. Clicking Apply updates the price live with strikethrough + Save badge — creates a sense of agency/reward.
+
+**Pricing rule:** "best discount wins" — never stacked. PDP defers application until user clicks Apply; ProductCard discount badges in shop grid remain auto-applied (unchanged).
+
+**DB migration (applied — `add_promotions_table`):**
+```sql
+CREATE TABLE promotions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT,
+  discount_type TEXT NOT NULL CHECK (discount_type IN ('percent', 'flat')),
+  discount_value NUMERIC NOT NULL CHECK (discount_value > 0),
+  scope TEXT NOT NULL DEFAULT 'all' CHECK (scope IN ('all', 'category')),
+  scope_value TEXT,
+  starts_at TIMESTAMPTZ,
+  ends_at TIMESTAMPTZ,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE promotions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "promotions_public_read" ON promotions FOR SELECT USING (is_active = true);
+CREATE POLICY "promotions_admin_all" ON promotions FOR ALL USING (auth.uid() IN (SELECT user_id FROM admin_users));
+CREATE INDEX promotions_active_idx ON promotions(is_active, starts_at, ends_at);
+```
+
+**Files (planned):**
+- New: `src/app/admin/promotions/{page,actions}.tsx`, `src/app/admin/promotions/{new,[id]}/page.tsx`, `src/components/admin/{PromotionForm,PromotionTable}.tsx`, `src/components/public/OffersPanel.tsx`
+- Modified: `src/lib/types.ts` (Promotion, Offer types), `src/lib/pricing.ts` (promotion helpers), `src/components/admin/Sidebar.tsx` (Promotions link), `src/components/public/ShadeSelector.tsx` (click-to-apply), `src/app/(public)/shop/[slug]/page.tsx` (fetch promotions)
+
+**What's next:** User runs SQL migration; verify admin can create promotion; verify PDP offer panel applies/unapplies correctly.
+
+---
+
+## 2026-04-18 — Per-shade (variant) discount overrides
+
+**Status:** DONE (migration applied via Supabase MCP, code complete, typecheck + build pass)
+
+Extending the existing product-level discount system so each shade (variant) can carry its own optional discount, independently of the product discount. Resolution rule: **variant discount overrides product discount** when live; otherwise the product discount is inherited. Field parity with the existing `Discount` shape — type (percent/flat), value, starts_at, ends_at, is_active — so per-shade sales can be scheduled.
+
+**DB migration (applied — `add_variant_discounts`):**
+- Added `variant_id uuid NULL REFERENCES product_variants(id) ON DELETE CASCADE` to `discounts`
+- Made `product_id` nullable
+- Dropped the old `UNIQUE(product_id)` constraint (`one_discount_per_product`)
+- Added partial unique indexes: `discounts_product_id_unique` WHERE variant_id IS NULL, `discounts_variant_id_unique` WHERE variant_id IS NOT NULL
+- Added `discounts_scope_check` (exactly one of product_id / variant_id must be set)
+- RLS unchanged — existing admin-write policy (`admin_users`) covers variant-scoped rows
+
+**Files touched (code):**
+- `src/lib/types.ts` — `Discount.variant_id`, `Discount.product_id` nullable, `ProductVariant.discount`
+- `src/lib/pricing.ts` — `computePrice` prefers variant discount over product discount
+- `src/components/admin/DiscountSection.tsx` — extracted shared section (reused by Product + Variant forms)
+- `src/components/admin/ProductForm.tsx` — imports `DiscountSection` instead of embedding
+- `src/components/admin/VariantForm.tsx` — adds discount fields with live preview
+- `src/components/admin/VariantManager.tsx` — discount badge beside the price row
+- `src/app/admin/products/actions.ts` — `upsertDiscount` now accepts product- or variant-scoped target; `createVariant` / `updateVariant` handle variant discount; `deleteVariant` cascades via FK
+- `src/app/(public)/shop/[slug]/page.tsx` — fetches variant-scoped discounts and attaches them to each variant
+- `src/app/(public)/shop/page.tsx` + `src/app/(public)/page.tsx` — same for grid/carousel first-variant rendering
+- `src/app/admin/products/[id]/page.tsx` — same for admin preview
+
+**What's next:** In the admin dashboard, edit a product → open any shade → set a discount → save, and verify on `/shop/[slug]` that clicking between shades swaps the price between the variant-specific discount and the inherited product discount.
+
+---
+
 ## 2026-04-18 — Update: prices set to Satoshi font
 
 **Status:** DONE

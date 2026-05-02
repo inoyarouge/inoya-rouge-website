@@ -22,7 +22,8 @@ export type Product = {
 
 export type Discount = {
   id: string
-  product_id: string
+  product_id: string | null
+  variant_id: string | null
   type: 'percent' | 'flat'
   value: number
   starts_at: string | null
@@ -36,10 +37,20 @@ export type ProductVariant = {
   product_id: string
   shade_name: string
   shade_color: string | null
-  description: string | null
   image_url: string | null
   price_override: number | null
   is_active: boolean
+  sort_order: number
+  created_at: string
+  discount?: Discount | null
+  images?: VariantImage[]
+}
+
+export type VariantImage = {
+  id: string
+  variant_id: string
+  url: string
+  storage_path: string
   sort_order: number
   created_at: string
 }
@@ -61,4 +72,27 @@ export type Collection = {
   name: string
   sort_order: number
   created_at: string
+}
+
+export type Promotion = {
+  id: string
+  name: string
+  description: string | null
+  discount_type: 'percent' | 'flat'
+  discount_value: number
+  scope: 'all' | 'category'
+  scope_value: string | null
+  starts_at: string | null
+  ends_at: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export type Offer = {
+  id: string
+  source: 'product' | 'variant' | 'promotion'
+  label: string
+  endsAt: string | null
+  discountType: 'percent' | 'flat'
+  discountValue: number
 }

@@ -2,14 +2,14 @@
 
 import { useState } from 'react'
 
-const tabs = [
+const allTabs = [
   { key: 'privacy', label: 'Privacy Policy' },
   { key: 'terms', label: 'Terms & Conditions' },
   { key: 'shipping', label: 'Shipping Policy' },
   { key: 'returns', label: 'Returns & Refunds' },
 ] as const
 
-type TabKey = (typeof tabs)[number]['key']
+type TabKey = (typeof allTabs)[number]['key']
 
 const content: Record<TabKey, { heading: string; sections: { title: string; body: string }[] }> = {
   privacy: {
@@ -29,7 +29,7 @@ const content: Record<TabKey, { heading: string; sections: { title: string; body
       },
       {
         title: 'Contact',
-        body: 'For any privacy-related concerns, please contact us at InoyaRouge@gmail.com.',
+        body: 'For any privacy-related concerns, please contact us at inoyarouge@gmail.com.',
       },
     ],
   },
@@ -84,7 +84,7 @@ const content: Record<TabKey, { heading: string; sections: { title: string; body
       },
       {
         title: 'How to Request a Return',
-        body: 'Contact us at InoyaRouge@gmail.com with your order number and photos of the damaged/defective product. Our team will review your request within 48 hours.',
+        body: 'Contact us at inoyarouge@gmail.com with your order number and photos of the damaged/defective product. Our team will review your request within 48 hours.',
       },
       {
         title: 'Refund Process',
@@ -98,8 +98,9 @@ const content: Record<TabKey, { heading: string; sections: { title: string; body
   },
 }
 
-export default function PolicyTabs({ defaultTab }: { defaultTab?: string }) {
-  const initial = tabs.find((t) => t.key === defaultTab) ? (defaultTab as TabKey) : 'privacy'
+export default function PolicyTabs({ defaultTab, exclude = [] }: { defaultTab?: string; exclude?: TabKey[] }) {
+  const tabs = allTabs.filter((t) => !exclude.includes(t.key))
+  const initial = tabs.find((t) => t.key === defaultTab) ? (defaultTab as TabKey) : tabs[0].key
   const [activeTab, setActiveTab] = useState<TabKey>(initial)
   const active = content[activeTab]
 
@@ -110,11 +111,10 @@ export default function PolicyTabs({ defaultTab }: { defaultTab?: string }) {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`min-h-[44px] px-4 py-3 text-sm font-medium whitespace-nowrap ${
-              activeTab === tab.key
+            className={`min-h-[44px] px-4 py-3 text-sm font-medium whitespace-nowrap ${activeTab === tab.key
                 ? 'border-b-2 border-brand-rose text-brand-rose'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
           >
             {tab.label}
           </button>

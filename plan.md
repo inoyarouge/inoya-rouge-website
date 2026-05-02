@@ -65,7 +65,6 @@ Everything in this blueprint is part of the core build. The admin dashboard incl
 | product_id   | uuid        | FK → products.id, NOT NULL       | Which product this variant belongs to    |
 | shade_name   | text        | NOT NULL                         | Shade name (e.g. "Classic Red", "Nude Pink") |
 | shade_color  | text        |                                  | Hex color code for swatch display (e.g. "#C7365F") |
-| description  | text        |                                  | Shade-specific description               |
 | image_url    | text        |                                  | Photo URL for this specific shade        |
 | price_override | numeric   |                                  | If set, overrides product's base_price for this shade. If null, uses base_price. |
 | is_active    | boolean     | DEFAULT true                     | Toggle individual shades on/off          |
@@ -300,7 +299,7 @@ USING (
 
 #### `/contact` — Contact Page
 - **Rendering:** SSG (fully static)
-- Contact cards: Phone (9836048717, Mon-Sat 10AM-8PM), Email (InoyaRouge@gmail.com), Social (Instagram handle — pending)
+- Contact cards: Phone (9836048717, Mon-Sat 10AM-8PM), Email (inoyarouge@gmail.com), Social (Instagram handle — pending)
 - Optional: simple enquiry form
 - **Data:** none — static content
 

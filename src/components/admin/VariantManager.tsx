@@ -19,7 +19,8 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { deleteVariant, reorderVariants, toggleVariantActive } from '@/app/admin/products/actions'
+import { deleteVariant, reorderVariants, toggleVariantActive } from '@/app/admin/(protected)/products/actions'
+import { isDiscountLive } from '@/lib/pricing'
 import { computeReorder } from '@/lib/dnd-helpers'
 import VariantForm from './VariantForm'
 import { Plus, Pencil, Trash2, Check, X, Loader2, GripVertical } from 'lucide-react'
@@ -27,6 +28,7 @@ import { Plus, Pencil, Trash2, Check, X, Loader2, GripVertical } from 'lucide-re
 function SortableVariantCard({
   variant,
   productId,
+  productBasePrice,
   editingId,
   setEditingId,
   setShowForm,
@@ -38,6 +40,7 @@ function SortableVariantCard({
 }: {
   variant: ProductVariant
   productId: string
+  productBasePrice: number
   editingId: string | null
   setEditingId: (id: string | null) => void
   setShowForm: (show: boolean) => void
@@ -70,6 +73,7 @@ function SortableVariantCard({
         <div className="p-1 mb-4">
           <VariantForm
             productId={productId}
+            productBasePrice={productBasePrice}
             variant={v}
             onDone={() => setEditingId(null)}
           />
@@ -113,11 +117,20 @@ function SortableVariantCard({
           <p className="text-sm font-semibold text-gray-900 truncate">
             {v.shade_name}
           </p>
-          {v.price_override ? (
-            <p className="text-xs text-gray-500 mt-0.5">Override ₹{v.price_override}</p>
-          ) : (
-            <p className="text-xs text-gray-400 mt-0.5">Base Price</p>
-          )}
+          <div className="flex items-center gap-2 mt-0.5">
+            {v.price_override ? (
+              <p className="text-xs text-gray-500">Override ₹{v.price_override}</p>
+            ) : (
+              <p className="text-xs text-gray-400">Base Price</p>
+            )}
+            {isDiscountLive(v.discount) && (
+              <span className="text-[10px] font-semibold text-[#720B0B] border border-[#720B0B]/30 bg-[#720B0B]/5 rounded px-1.5 py-0.5 tracking-wide">
+                {v.discount!.type === 'percent'
+                  ? `−${Math.round(v.discount!.value)}%`
+                  : `−₹${Math.round(v.discount!.value)}`}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-4 shrink-0">
@@ -213,9 +226,11 @@ function DragOverlayCard({ variant }: { variant: ProductVariant }) {
 
 export default function VariantManager({
   productId,
+  productBasePrice,
   variants,
 }: {
   productId: string
+  productBasePrice: number
   variants: ProductVariant[]
 }) {
   const [items, setItems] = useState(variants)
@@ -300,6 +315,7 @@ export default function VariantManager({
           <div className="p-1">
             <VariantForm
               productId={productId}
+              productBasePrice={productBasePrice}
               variant={null}
               onDone={() => setShowForm(false)}
             />
@@ -327,6 +343,7 @@ export default function VariantManager({
                 key={v.id}
                 variant={v}
                 productId={productId}
+                productBasePrice={productBasePrice}
                 editingId={editingId}
                 setEditingId={setEditingId}
                 setShowForm={setShowForm}

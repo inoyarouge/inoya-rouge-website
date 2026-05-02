@@ -25,7 +25,7 @@ import {
   updateCollection,
   deleteCollection,
   reorderCollections,
-} from '@/app/admin/collections/actions'
+} from '@/app/admin/(protected)/collections/actions'
 import {
   Plus,
   Pencil,

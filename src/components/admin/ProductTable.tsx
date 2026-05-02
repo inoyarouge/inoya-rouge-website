@@ -19,7 +19,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { deleteProduct, toggleProductActive, reorderProducts } from '@/app/admin/products/actions'
+import { deleteProduct, toggleProductActive, reorderProducts } from '@/app/admin/(protected)/products/actions'
 import { computeReorder } from '@/lib/dnd-helpers'
 import { Pencil, Trash2, Loader2, Check, X, GripVertical } from 'lucide-react'
 
@@ -243,17 +243,7 @@ export default function ProductTable({ products }: { products: ProductRow[] }) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <table className="w-full text-sm table-fixed">
-          <colgroup>
-            <col className="w-12" />
-            <col />
-            <col className="w-24" />
-            <col className="w-28" />
-            <col className="w-20" />
-            <col className="w-16" />
-            <col className="w-24" />
-            <col className="w-48" />
-          </colgroup>
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
               <th className="px-3 py-4" />

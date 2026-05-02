@@ -1,25 +1,73 @@
 'use client'
 
-import { useState, ReactNode } from 'react'
+import { useState, useMemo, useEffect, ReactNode } from 'react'
 import Image from 'next/image'
-import type { Product, ProductVariant } from '@/lib/types'
-import { computePrice, formatINR } from '@/lib/pricing'
+import type { Product, ProductVariant, Promotion, Offer } from '@/lib/types'
+import { computePriceFromOffers, formatINR, getAvailableOffers } from '@/lib/pricing'
 import BuyNowModal from './BuyNowModal'
+import OffersPanel from './OffersPanel'
+import { ChevronDown } from 'lucide-react'
 
 interface ShadeSelectorProps {
   variants: ProductVariant[]
   product: Product
+  promotions?: Promotion[]
   children?: ReactNode
 }
 
-export default function ShadeSelector({ variants, product, children }: ShadeSelectorProps) {
+export default function ShadeSelector({ variants, product, promotions = [], children }: ShadeSelectorProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false)
+  const [isOffersOpen, setIsOffersOpen] = useState(false)
+  const [appliedOfferIds, setAppliedOfferIds] = useState<string[]>([])
 
   const selectedVariant = variants[selectedIndex] ?? variants[0]
 
-  const priceInfo = computePrice(product, selectedVariant)
+  // The per-variant gallery. Fall back to the single `image_url` for legacy variants.
+  const galleryImages = useMemo(() => {
+    const g = selectedVariant?.images ?? []
+    if (g.length > 0) return g.map((img) => ({ id: img.id, url: img.url }))
+    if (selectedVariant?.image_url) {
+      return [{ id: `legacy-${selectedVariant.id}`, url: selectedVariant.image_url }]
+    }
+    return [] as { id: string; url: string }[]
+  }, [selectedVariant])
+
+  // Reset the image index when the user switches to a different shade.
+  useEffect(() => {
+    setSelectedImageIndex(0)
+  }, [selectedIndex])
+
+  const offers: Offer[] = useMemo(
+    () => getAvailableOffers(product, selectedVariant, promotions),
+    [product, selectedVariant, promotions],
+  )
+
+  // Drop any applied offer IDs that no longer exist after the shade/variant changes
+  // (e.g. switching to a shade without a variant-scoped discount).
+  useEffect(() => {
+    setAppliedOfferIds((prev) => {
+      const valid = prev.filter((id) => offers.some((o) => o.id === id))
+      return valid.length === prev.length ? prev : valid
+    })
+  }, [offers])
+
+  const appliedOffers = useMemo(
+    () => offers.filter((o) => appliedOfferIds.includes(o.id)),
+    [offers, appliedOfferIds],
+  )
+
+  const toggleOffer = (id: string) =>
+    setAppliedOfferIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    )
+
+  const basePrice = selectedVariant?.price_override ?? product.base_price
+  const priceInfo = computePriceFromOffers(basePrice, appliedOffers)
+  const appliedOfferLabel =
+    appliedOffers.length > 0 ? appliedOffers.map((o) => o.label).join(' + ') : null
 
   const handleBuyNowClick = () => {
     if (product.buy_url) {
@@ -40,47 +88,43 @@ export default function ShadeSelector({ variants, product, children }: ShadeSele
             {/* Images */}
             <div className="flex flex-col-reverse md:flex-row gap-4">
 
-              {/* Thumbnails (Left side on desktop, bottom on mobile) */}
-              <div className="flex md:flex-col flex-row gap-4 overflow-x-auto md:w-24 shrink-0 md:max-h-[600px] no-scrollbar py-1 px-1">
-                {variants.map((v, i) => (
-                  v.image_url ? (
-                    <button
-                      key={v.id}
-                      onClick={() => setSelectedIndex(i)}
-                      className={`relative w-16 h-16 md:w-20 md:h-24 flex-shrink-0 transition-all ${i === selectedIndex
-                          ? 'opacity-100 ring-1 ring-burgundy ring-offset-2'
-                          : 'opacity-60 hover:opacity-100'
-                        }`}
-                    >
-                      <Image
-                        src={v.image_url}
-                        alt={`${product.name} thumbnail — ${v.shade_name}`}
-                        fill
-                        className="object-cover rounded-sm"
-                        sizes="80px"
-                      />
-                    </button>
-                  ) : null
+              {/* Thumbnails for the selected shade's gallery */}
+              <div data-lenis-prevent="true" className="flex md:flex-col flex-row gap-4 overflow-x-auto md:overflow-y-auto md:w-24 shrink-0 md:max-h-[600px] no-scrollbar py-1 px-1">
+                {galleryImages.map((img, i) => (
+                  <button
+                    key={img.id}
+                    onClick={() => setSelectedImageIndex(i)}
+                    className={`relative w-16 h-16 md:w-20 md:h-24 flex-shrink-0 transition-all ${i === selectedImageIndex
+                        ? 'opacity-100 ring-1 ring-burgundy ring-offset-2'
+                        : 'opacity-60 hover:opacity-100'
+                      }`}
+                  >
+                    <Image
+                      src={img.url}
+                      alt={`${product.name} — ${selectedVariant?.shade_name ?? ''} thumbnail ${i + 1}`}
+                      fill
+                      className="object-cover rounded-sm"
+                      sizes="80px"
+                    />
+                  </button>
                 ))}
               </div>
 
-              {/* Main Featured Image */}
+              {/* Main Featured Image — opacity-swap within the selected shade's gallery */}
               <div className="relative aspect-[4/5] w-full flex-grow bg-white">
-                {variants.map((v, i) =>
-                  v.image_url ? (
-                    <Image
-                      key={v.id}
-                      src={v.image_url}
-                      alt={`${product.name} — ${v.shade_name}`}
-                      fill
-                      className={`object-cover transition-opacity duration-300 ${i === selectedIndex ? 'opacity-100 relative' : 'opacity-0 absolute inset-0'
-                        }`}
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      priority={i === 0}
-                    />
-                  ) : null
-                )}
-                {variants.every(v => !v.image_url) && (
+                {galleryImages.map((img, i) => (
+                  <Image
+                    key={img.id}
+                    src={img.url}
+                    alt={`${product.name} — ${selectedVariant?.shade_name ?? ''}`}
+                    fill
+                    className={`object-cover transition-opacity duration-300 ${i === selectedImageIndex ? 'opacity-100 relative' : 'opacity-0 absolute inset-0'
+                      }`}
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    priority={i === 0 && selectedIndex === 0}
+                  />
+                ))}
+                {galleryImages.length === 0 && (
                   <div className="flex items-center justify-center h-full text-gray-400 bg-warm-pink/20 text-sm">
                     No image available
                   </div>
@@ -143,8 +187,8 @@ export default function ShadeSelector({ variants, product, children }: ShadeSele
                       onClick={() => setSelectedIndex(i)}
                       aria-label={v.shade_name}
                       className={`w-9 h-9 md:w-[38px] md:h-[38px] rounded-full flex-shrink-0 relative transition-all ${i === selectedIndex
-                          ? 'ring-1 ring-offset-4 ring-gray-600 scale-105'
-                          : 'ring-1 ring-gray-300 ring-offset-0 hover:scale-105 hover:shadow-sm'
+                        ? 'ring-1 ring-offset-4 ring-gray-600 scale-105'
+                        : 'ring-1 ring-gray-300 ring-offset-0 hover:scale-105 hover:shadow-sm'
                         }`}
                       style={{ backgroundColor: v.shade_color ?? '#ccc' }}
                     />
@@ -180,18 +224,36 @@ export default function ShadeSelector({ variants, product, children }: ShadeSele
             <div className="flex flex-col gap-3 w-full max-w-[400px]">
               <button
                 type="button"
-                className="w-full border border-gray-200 text-burgundy text-xs uppercase tracking-[0.15em] py-4 bg-transparent hover:border-burgundy/30 hover:bg-burgundy/5 transition-all outline-none"
+                onClick={() => setIsOffersOpen((o) => !o)}
+                aria-expanded={isOffersOpen}
+                className="w-full border border-gray-200 text-burgundy text-xs uppercase tracking-[0.15em] py-4 bg-transparent hover:border-burgundy/30 hover:bg-burgundy/5 transition-all outline-none flex items-center justify-center gap-2"
               >
-                AVAILABLE OFFERS
+                <span>AVAILABLE OFFERS</span>
+                {offers.length > 0 && (
+                  <span className="text-xs text-burgundy/70">({offers.length})</span>
+                )}
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform ${isOffersOpen ? 'rotate-180' : ''}`}
+                />
               </button>
+
+              {isOffersOpen && (
+                <OffersPanel
+                  offers={offers}
+                  appliedOfferIds={appliedOfferIds}
+                  onToggle={toggleOffer}
+                  savings={priceInfo.original - priceInfo.final}
+                />
+              )}
 
               <button
                 type="button"
                 onClick={handleBuyNowClick}
-                className="group/btn relative flex w-full bg-burgundy overflow-hidden text-white font-sans text-xs tracking-[0.15em] uppercase text-center min-h-[50px] items-center justify-center rounded-sm transition-all duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.01] active:scale-[0.98] outline-none border-none"
+                className="group/btn relative flex w-full bg-burgundy overflow-hidden text-white font-sans text-xs tracking-[0.15em] uppercase text-center min-h-[50px] items-center justify-center rounded-sm outline-none border-none"
               >
-                {/* Text with tracking expansion */}
-                <span className="relative z-10 transition-all duration-500 ease-out group-hover/btn:tracking-[0.25em]">
+                <span className="absolute top-0 -left-[100%] w-[60%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-25deg] transition-all duration-[800ms] ease-in-out group-hover/btn:left-[200%]" />
+                <span className="relative z-10">
                   BUY NOW
                 </span>
               </button>
@@ -207,6 +269,8 @@ export default function ShadeSelector({ variants, product, children }: ShadeSele
         product={product}
         selectedVariant={selectedVariant}
         quantity={quantity}
+        priceInfo={priceInfo}
+        appliedOfferLabel={appliedOfferLabel}
       />
     </div>
   )

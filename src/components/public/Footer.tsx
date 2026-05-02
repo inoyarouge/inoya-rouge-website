@@ -1,35 +1,37 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import FooterShareButton from './FooterShareButton'
 
 const maisonLinks = [
-  { href: '/our-story', label: 'Our Philosophy' },
-  { href: '/our-story', label: 'Sustainability' },
-  { href: '/our-story', label: 'The Atelier' },
+  { href: '/about-us', label: 'About Us' },
+  { href: '/about-us#our-mission', label: 'Our Mission' },
+  { href: '/about-us#clean-beauty-promise', label: 'Our Promise' },
 ]
 
 const conciergeLinks = [
-  { href: '/policies?tab=shipping', label: 'Shipping' },
-  { href: '/policies?tab=returns', label: 'Returns' },
+  { href: '/shipping-and-delivery', label: 'Shipping & Delivery' },
+  { href: '/returns-and-refunds', label: 'Returns & Refunds' },
+  { href: '/orders-and-payments', label: 'Orders & Payments' },
   { href: '/contact', label: 'Contact Us' },
 ]
 
 const legalLinks = [
-  { href: '/policies?tab=privacy', label: 'Privacy Policy' },
-  { href: '/policies?tab=terms', label: 'Terms of Service' },
+  { href: '/privacy-policy', label: 'Privacy Policy' },
+  { href: '/product-information', label: 'Product Information' },
 ]
 
 function FooterColumn({ heading, links, className = '' }: { heading: string; links: { href: string; label: string }[], className?: string }) {
   return (
     <div className={className}>
-      <h3 className="font-display text-[12px] tracking-[3px] text-white/60 uppercase mb-4">
+      <h3 className="font-display text-[11px] sm:text-[12px] tracking-[3px] sm:tracking-[4px] text-white/50 uppercase mb-5 sm:mb-6">
         {heading}
       </h3>
-      <ul className="space-y-2">
+      <ul className="space-y-3 sm:space-y-4">
         {links.map(link => (
           <li key={link.label}>
             <Link
               href={link.href}
-              className="font-sans text-[15px] text-white/60 hover:text-white py-1 inline-flex items-center transition-colors duration-300"
+              className="font-sans text-[15px] sm:text-[16px] md:text-[17px] text-white/70 hover:text-white py-1 inline-flex items-center transition-colors duration-300 leading-snug"
             >
               {link.label}
             </Link>
@@ -43,40 +45,45 @@ function FooterColumn({ heading, links, className = '' }: { heading: string; lin
 export default function Footer() {
   return (
     <footer className="bg-burgundy-red">
-      <div className="max-w-[1440px] mx-auto px-8 md:px-12 pt-20 pb-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-16">
+      <div className="max-w-[1440px] mx-auto px-6 sm:px-10 md:px-16 pt-16 sm:pt-20 md:pt-24 pb-10 sm:pb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-16 xl:gap-20">
+
           {/* Column 1: Brand */}
-          <div className="lg:col-span-2 lg:pr-12">
-            <h2 className="font-display text-[32px] lg:text-[36px] text-[#fff8f6] tracking-tight leading-tight">
+          <div className="sm:col-span-2 lg:col-span-2 lg:pr-10 xl:pr-16">
+            <h2 className="font-display text-[36px] sm:text-[40px] lg:text-[44px] text-[#fff8f6] tracking-tight leading-none">
               INOYA ROUGE
             </h2>
-            <p className="font-accent italic text-[18px] text-white/60 tracking-tight mt-4 leading-snug">
+            <p className="font-accent italic text-[18px] sm:text-[19px] md:text-[20px] text-white/60 tracking-tight mt-4 sm:mt-5 leading-snug">
               Inspired by nature, defined by colour
             </p>
-            <div className="flex gap-5 items-center mt-8">
-              <Link href="#" aria-label="Share" className="relative w-[13px] h-[14px] block">
-                <Image src="/images/icons/share.svg" alt="" fill sizes="13px" className="object-contain opacity-60 hover:opacity-100 transition-opacity duration-300" />
-              </Link>
-              <Link href="mailto:hello@inoyarouge.com" aria-label="Email" className="relative w-[14px] h-[11px] block">
-                <Image src="/images/icons/mail.svg" alt="" fill sizes="14px" className="object-contain opacity-60 hover:opacity-100 transition-opacity duration-300" />
-              </Link>
+            <div className="flex gap-6 items-center mt-8 sm:mt-10">
+              <FooterShareButton />
+              <a href="mailto:inoyarouge@gmail.com" aria-label="Email" className="relative w-[22px] h-[17px] block">
+                <Image src="/images/icons/mail.svg" alt="Email" fill sizes="22px" className="object-contain opacity-60 hover:opacity-100 transition-opacity duration-300" />
+              </a>
+              <a href="https://www.instagram.com/inoyarouge/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="opacity-60 hover:opacity-100 transition-opacity duration-300 text-white flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" /></svg>
+              </a>
             </div>
           </div>
 
-          {/* Column 2: The Maison */}
-          <FooterColumn heading="THE MAISON" links={maisonLinks} className="lg:col-span-1" />
-
-          {/* Column 3: Concierge */}
+          {/* Column 2: Concierge */}
           <FooterColumn heading="CONCIERGE" links={conciergeLinks} className="lg:col-span-1" />
 
-          {/* Column 4: Legal */}
-          <FooterColumn heading="LEGAL" links={legalLinks} className="lg:col-span-1" />
+          {/* Column 3: The Maison */}
+          <FooterColumn heading="THE MAISON" links={maisonLinks} className="lg:col-span-1" />
+
+          {/* Column 4: Fine Print */}
+          <FooterColumn heading="FINE PRINT" links={legalLinks} className="lg:col-span-1" />
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-white/20 mt-20 pt-6">
-          <p className="font-display text-[11px] tracking-[3px] text-white/60 text-center">
-            &copy; {new Date().getFullYear()} INOYA ROUGE &mdash; REFINED BEAUTY
+        {/* Divider + Copyright */}
+        <div className="border-t border-white/20 mt-16 sm:mt-20 pt-7 sm:pt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="font-display text-[12px] sm:text-[13px] tracking-[3px] sm:tracking-[4px] text-white/50 text-center sm:text-left">
+            &copy; {new Date().getFullYear()} INOYA ROUGE
+          </p>
+          <p className="font-display text-[12px] sm:text-[13px] tracking-[3px] text-white/40 text-center sm:text-right">
+            REFINED BEAUTY
           </p>
         </div>
       </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { uploadVariantImage } from '@/app/admin/products/actions'
+import { uploadVariantImage } from '@/app/admin/(protected)/products/actions'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
