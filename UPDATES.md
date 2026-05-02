@@ -1,3 +1,22 @@
+## 2026-05-02 — Fix: Vercel build failed prerendering `/_not-found` (useSearchParams Suspense bailout)
+
+**Status:** DONE
+
+Vercel deploy at 17:21:05 failed with `useSearchParams() should be wrapped in a suspense boundary at page "/404"` → `Error occurred prerendering page "/_not-found"` → exit code 1. Phase 6 (deploy) was blocked.
+
+Root cause: [src/components/providers/SmoothScrollProvider.tsx:14](src/components/providers/SmoothScrollProvider.tsx#L14) calls `useSearchParams()` and is rendered by the **root** layout at [src/app/layout.tsx:52](src/app/layout.tsx#L52) without a Suspense boundary. The route-group layouts at [src/app/(public)/layout.tsx](src/app/(public)/layout.tsx) and `src/app/admin/layout.tsx` already wrap their `useSearchParams` consumer (`NavigationProgress`) — but `/_not-found` is rendered directly under the root layout (it doesn't sit inside any route group), so the unwrapped provider above it forced a CSR bailout and broke static prerendering for that one page.
+
+Fix: wrapped `<SmoothScrollProvider>{children}</SmoothScrollProvider>` in `<Suspense fallback={children}>` in the root layout, and added `import { Suspense } from 'react'`. Same pattern the route-group layouts use for `NavigationProgress`. Fallback is `children` (not `null`) so page content still renders during the brief client-only suspension on initial hydration — the provider only adds Lenis smooth scroll, it does not gate rendering.
+
+**Files touched:**
+- [src/app/layout.tsx](src/app/layout.tsx) — added `Suspense` import; wrapped the `<SmoothScrollProvider>` invocation in `<Suspense fallback={children}>`
+
+Not changed: `SmoothScrollProvider` itself (the `useSearchParams` dependency in the `lenis.scrollTo(0)` effect at [SmoothScrollProvider.tsx:33-37](src/components/providers/SmoothScrollProvider.tsx#L33-L37) is preserved — it re-triggers scroll-to-top when query params change, e.g. `?shade=rose`). `NavigationProgress` was already correctly wrapped at every layout level and inside [not-found.tsx:33-35](src/app/not-found.tsx#L33-L35).
+
+**Verification:** `npm run build` ran locally and completed `Generating static pages (15/15)` with `/_not-found` listed as `○ (Static)` (171 B, 106 kB First Load JS) — was previously failing prerender. Phase 6 deploy unblocked; pushing this commit should let the Vercel build succeed.
+
+---
+
 ## 2026-05-02 — Remove unused variant `description` field
 
 **Status:** DONE
