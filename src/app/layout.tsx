@@ -34,6 +34,10 @@ const newsreader = Newsreader({
 export const metadata: Metadata = {
   title: 'Inoya Rouge',
   description: 'Inspired by Nature, Defined by Color — Indian luxury cosmetics',
+  icons: {
+    icon: '/images/logo/inoya-rouge-logo.png',
+    apple: '/images/logo/inoya-rouge-logo.png',
+  },
 }
 
 export const viewport: Viewport = {
