@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { MessageSquare, ShoppingBag, LogOut, Home, Menu, X, Layers } from 'lucide-react'
+import { MessageSquare, ShoppingBag, LogOut, Home, Menu, X, Layers, Tag } from 'lucide-react'
 
 export default function Sidebar({ pendingCount }: { pendingCount: number }) {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -26,6 +26,7 @@ export default function Sidebar({ pendingCount }: { pendingCount: number }) {
     },
     { href: '/admin/products', label: 'Products', icon: ShoppingBag, badge: null },
     { href: '/admin/collections', label: 'Collections', icon: Layers, badge: null },
+    { href: '/admin/promotions', label: 'Promotions', icon: Tag, badge: null },
   ]
 
   const nav = (

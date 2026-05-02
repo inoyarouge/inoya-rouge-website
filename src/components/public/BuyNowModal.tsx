@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Product, ProductVariant } from '@/lib/types'
-import { computePrice, formatINR } from '@/lib/pricing'
+import { computePrice, formatINR, type PriceInfo } from '@/lib/pricing'
 
 interface BuyNowModalProps {
   isOpen: boolean
@@ -11,6 +11,8 @@ interface BuyNowModalProps {
   product: Product
   selectedVariant: ProductVariant | undefined
   quantity: number
+  priceInfo?: PriceInfo
+  appliedOfferLabel?: string | null
 }
 
 type AddressForm = {
@@ -43,10 +45,13 @@ export default function BuyNowModal({
   product,
   selectedVariant,
   quantity,
+  priceInfo: priceInfoProp,
+  appliedOfferLabel,
 }: BuyNowModalProps) {
   const [form, setForm] = useState<AddressForm>(EMPTY_FORM)
   const [errors, setErrors] = useState<Partial<Record<keyof AddressForm, string>>>({})
   const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const firstInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -131,11 +136,13 @@ export default function BuyNowModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (isSubmitting) return
     if (!validate()) return
+    setIsSubmitting(true)
 
     const shade = selectedVariant?.shade_name
     const line2 = form.addressLine2.trim()
-    const priceInfo = computePrice(product, selectedVariant)
+    const priceInfo = priceInfoProp ?? computePrice(product, selectedVariant)
     const total = priceInfo.final * quantity
     const originalTotal = priceInfo.original * quantity
 
@@ -145,8 +152,9 @@ export default function BuyNowModal({
         : 'https://inoyarouge.com'
     const productUrl = `${origin}/shop/${product.slug}`
 
+    const offerSuffix = appliedOfferLabel ? ` [${appliedOfferLabel}]` : ''
     const priceLine = priceInfo.hasDiscount
-      ? `Price: ${formatINR(total)} (was ${formatINR(originalTotal)}, -${priceInfo.discountPercent}%)`
+      ? `Price: ${formatINR(total)} (was ${formatINR(originalTotal)}, -${priceInfo.discountPercent}%)${offerSuffix}`
       : `Price: ${formatINR(total)}`
 
     const message =
@@ -163,6 +171,7 @@ export default function BuyNowModal({
 
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
     window.open(url, '_blank', 'noopener,noreferrer')
+    setIsSubmitting(false)
     onClose()
   }
 
@@ -296,9 +305,19 @@ export default function BuyNowModal({
 
               <button
                 type="submit"
-                className="w-full bg-burgundy text-white text-xs uppercase tracking-[0.15em] py-4 hover:bg-burgundy-dark transition-all outline-none mt-2"
+                disabled={isSubmitting}
+                className="group/btn relative overflow-hidden w-full bg-burgundy text-white text-xs uppercase tracking-[0.15em] py-4 outline-none mt-2 disabled:opacity-70 disabled:cursor-wait flex items-center justify-center gap-2"
               >
-                Proceed to Order
+                <span className="absolute top-0 -left-[100%] w-[60%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-25deg] transition-all duration-[800ms] ease-in-out group-hover/btn:left-[200%]" />
+                <span className="relative z-10 flex items-center gap-2">
+                  {isSubmitting && (
+                    <span
+                      aria-hidden
+                      className="inline-block w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"
+                    />
+                  )}
+                  {isSubmitting ? 'Sending…' : 'Proceed to Order'}
+                </span>
               </button>
               <p className="text-[11px] text-gray-500 text-center">
                 Continues on WhatsApp with your order and shipping address.
@@ -345,9 +364,8 @@ function Field({
         placeholder={placeholder}
         inputMode={inputMode}
         autoComplete={autoComplete}
-        className={`w-full border ${
-          error ? 'border-red-400' : 'border-gray-200'
-        } bg-white px-3 py-2.5 text-[14px] text-gray-900 outline-none focus:border-burgundy transition-colors`}
+        className={`w-full border ${error ? 'border-red-400' : 'border-gray-200'
+          } bg-white px-3 py-2.5 text-[14px] text-gray-900 outline-none focus:border-burgundy transition-colors`}
       />
       {error && <span className="text-[11px] text-red-500 mt-1 block">{error}</span>}
     </label>

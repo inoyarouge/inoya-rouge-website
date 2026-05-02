@@ -8,7 +8,7 @@ import {
   rejectTestimonial,
   deleteTestimonial,
   reorderTestimonials,
-} from '@/app/admin/testimonials/actions'
+} from '@/app/admin/(protected)/testimonials/actions'
 import {
   DndContext,
   closestCenter,

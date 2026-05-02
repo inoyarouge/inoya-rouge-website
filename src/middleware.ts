@@ -2,9 +2,18 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const isAdminPath =
+    request.nextUrl.pathname.startsWith('/admin') &&
+    !request.nextUrl.pathname.startsWith('/admin/login')
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
   if (!supabaseUrl || !supabaseAnonKey) {
+    // Fail closed for admin paths; let public paths through.
+    if (isAdminPath) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
     return NextResponse.next()
   }
 
@@ -35,17 +44,29 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // getUser() validates server-side — use this, not getSession()
-  const { data: { user } } = await supabase.auth.getUser()
+  if (!isAdminPath) {
+    // Refresh session cookies for non-admin paths but do not gate.
+    await supabase.auth.getUser()
+    return response
+  }
 
-  // Protect all /admin/* routes except /admin/login
-  if (
-    !user &&
-    request.nextUrl.pathname.startsWith('/admin') &&
-    !request.nextUrl.pathname.startsWith('/admin/login')
-  ) {
-    const loginUrl = new URL('/admin/login', request.url)
-    return NextResponse.redirect(loginUrl)
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (error || !data) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+  } catch {
+    return NextResponse.redirect(new URL('/admin/login', request.url))
   }
 
   return response

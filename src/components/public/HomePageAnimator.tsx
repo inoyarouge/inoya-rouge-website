@@ -23,6 +23,14 @@ export default function HomePageAnimator() {
       delay: 0.2, // slight delay for initial load
     })
 
+    // Hero image slow dynamic zoom out
+    gsap.from('.hero-image-zoom-anim', {
+      scale: 1.15,
+      duration: 6,
+      ease: 'power2.out',
+      transformOrigin: 'center center',
+    })
+
     // 2. Individual element fade up on scroll
     gsap.utils.toArray('.scroll-fade-up').forEach((elem: any) => {
       gsap.from(elem, {

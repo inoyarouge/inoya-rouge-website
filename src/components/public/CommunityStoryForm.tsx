@@ -31,9 +31,6 @@ export default function CommunityStoryForm() {
         <p className="font-accent italic text-[28px] md:text-[36px] text-burgundy-dark text-center leading-tight">
           Thank you for sharing.
         </p>
-        <p className="font-sans text-[15px] text-burgundy/80 text-center mt-3 tracking-wide">
-          Your story is beautifully yours, and we&apos;re honored you shared it.
-        </p>
       </div>
     )
   }
@@ -42,7 +39,7 @@ export default function CommunityStoryForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-[14px] w-full max-w-[650px] mx-auto mt-6">
-      
+
       {/* Row 1: Name and Email */}
       <div className="flex flex-col md:flex-row gap-[14px]">
         <input
@@ -90,9 +87,12 @@ export default function CommunityStoryForm() {
         <button
           type="submit"
           disabled={submitting}
-          className="bg-burgundy text-white font-sans text-[14px] font-normal uppercase tracking-[0.15em] px-12 h-[54px] hover:bg-burgundy-dark transition-all disabled:opacity-50 min-w-[200px]"
+          className="group/btn relative bg-burgundy overflow-hidden text-white font-sans text-[14px] font-normal uppercase tracking-[0.15em] px-12 h-[54px] disabled:opacity-50 disabled:pointer-events-none min-w-[200px]"
         >
-          {submitting ? 'Submitting...' : 'Submit Story'}
+          <span className="absolute top-0 -left-[100%] w-[60%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-25deg] transition-all duration-[800ms] ease-in-out group-hover/btn:left-[200%]" />
+          <span className="relative z-10">
+            {submitting ? 'Submitting...' : 'Submit Story'}
+          </span>
         </button>
       </div>
     </form>

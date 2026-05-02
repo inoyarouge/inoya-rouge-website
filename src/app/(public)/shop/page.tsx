@@ -3,10 +3,9 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import ShopClient from '@/components/public/ShopClient'
 import TrustBadges from '@/components/public/TrustBadges'
-import type { Product, ProductVariant, Collection } from '@/lib/types'
+import type { Product, ProductVariant, Collection, Discount, Promotion, VariantImage } from '@/lib/types'
 import { normalizeDiscount } from '@/lib/pricing'
 
-export const dynamic = 'force-dynamic'
 export const revalidate = 1800
 
 export const metadata: Metadata = {
@@ -17,7 +16,7 @@ export const metadata: Metadata = {
 
 function SkeletonGrid() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-12">
       {Array.from({ length: 8 }, (_, i) => (
         <div key={i}>
           <div className="aspect-[211/264] bg-gray-200 animate-pulse" />
@@ -45,13 +44,16 @@ function ShopSkeleton() {
   )
 }
 
-async function ShopDataWrapper() {
+type Category = 'All' | 'Lips' | 'Eyes' | 'Face'
+const validCategories: Category[] = ['All', 'Lips', 'Eyes', 'Face']
+
+async function ShopDataWrapper({ initialCategory }: { initialCategory: Category }) {
   const supabase = await createClient()
 
-  const [productsRes, collectionsRes] = await Promise.all([
+  const [productsRes, collectionsRes, promotionsRes] = await Promise.all([
     supabase
       .from('products')
-      .select('*, product_variants(*), discounts(*)')
+      .select('*, product_variants(*, discounts(*), variant_images(*)), discounts(*)')
       .eq('is_active', true)
       .order('sort_order', { ascending: true }),
     supabase
@@ -59,26 +61,47 @@ async function ShopDataWrapper() {
       .select('*')
       .order('category', { ascending: true })
       .order('sort_order', { ascending: true }),
+    supabase
+      .from('promotions')
+      .select('*')
+      .eq('is_active', true),
   ])
 
   const products: Product[] = (productsRes.data ?? []).map(p => ({
     ...p,
-    variants: (p.product_variants as ProductVariant[] ?? [])
-      .filter((v: ProductVariant) => v.is_active)
-      .sort((a: ProductVariant, b: ProductVariant) => a.sort_order - b.sort_order),
+    variants: (p.product_variants as (ProductVariant & {
+      discounts?: unknown
+      variant_images?: VariantImage[]
+    })[] ?? [])
+      .filter((v) => v.is_active)
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map(({ discounts, variant_images, ...rest }) => ({
+        ...rest,
+        discount: normalizeDiscount(discounts as Discount | Discount[] | null | undefined),
+        images: (variant_images ?? []).slice().sort((a, b) => a.sort_order - b.sort_order),
+      })),
     discount: normalizeDiscount(p.discounts),
   }))
 
   const collections = (collectionsRes.data ?? []) as Collection[]
+  const promotions = (promotionsRes.data ?? []) as Promotion[]
 
-  return <ShopClient products={products} collections={collections} />
+  return <ShopClient products={products} collections={collections} promotions={promotions} initialCategory={initialCategory} />
 }
 
-export default function ShopPage() {
+export default async function ShopPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>
+}) {
+  const params = await searchParams
+  const raw = params.category
+  const initialCategory: Category = validCategories.includes(raw as Category) ? (raw as Category) : 'All'
+
   return (
     <div>
       <Suspense fallback={<ShopSkeleton />}>
-        <ShopDataWrapper />
+        <ShopDataWrapper initialCategory={initialCategory} />
       </Suspense>
       <TrustBadges />
     </div>

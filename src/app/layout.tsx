@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import { Newsreader } from 'next/font/google'
 import '@/styles/globals.css'
+import SmoothScrollProvider from '@/components/providers/SmoothScrollProvider'
 
 const agatho = localFont({
   src: [
@@ -48,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${agatho.variable} ${satoshi.variable} ${newsreader.variable} font-sans antialiased bg-cream text-gray-900`}>
-        {children}
+        <SmoothScrollProvider>{children}</SmoothScrollProvider>
       </body>
     </html>
   )
