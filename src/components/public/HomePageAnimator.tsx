@@ -26,7 +26,7 @@ export default function HomePageAnimator() {
     // Hero image slow dynamic zoom out
     gsap.from('.hero-image-zoom-anim', {
       scale: 1.15,
-      duration: 6,
+      duration: 2,
       ease: 'power2.out',
       transformOrigin: 'center center',
     })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
   DndContext,
@@ -183,10 +183,6 @@ export default function ProductTable({ products }: { products: ProductRow[] }) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isReordering, startReorder] = useTransition()
-
-  useEffect(() => {
-    setItems(products)
-  }, [products])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

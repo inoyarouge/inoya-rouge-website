@@ -1,22 +1,7 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-
-async function verifyAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  const { data } = await supabase
-    .from('admin_users')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .single()
-
-  if (!data) throw new Error('Unauthorized')
-  return supabase
-}
+import { requireAdmin } from '@/lib/auth/requireAdmin'
 
 function revalidateAll() {
   revalidatePath('/admin/collections')
@@ -25,7 +10,7 @@ function revalidateAll() {
 }
 
 export async function createCollection(category: string, name: string) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const trimmed = name.trim()
   if (!trimmed) throw new Error('Name is required')
@@ -50,8 +35,8 @@ export async function createCollection(category: string, name: string) {
     .single()
 
   if (error) {
-    console.error('createCollection error:', error.message, error.code)
-    throw new Error(`Failed to create collection: ${error.message}`)
+    console.error('createCollection error:', error)
+    throw new Error('Failed to create collection')
   }
 
   revalidateAll()
@@ -59,7 +44,7 @@ export async function createCollection(category: string, name: string) {
 }
 
 export async function updateCollection(id: string, newName: string) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const trimmed = newName.trim()
   if (!trimmed) throw new Error('Name is required')
@@ -82,8 +67,8 @@ export async function updateCollection(id: string, newName: string) {
     .eq('id', id)
 
   if (error) {
-    console.error('updateCollection error:', error.message, error.code)
-    throw new Error(`Failed to update collection: ${error.message}`)
+    console.error('updateCollection error:', error)
+    throw new Error('Failed to update collection')
   }
 
   const { error: cascadeErr } = await supabase
@@ -100,7 +85,7 @@ export async function updateCollection(id: string, newName: string) {
 }
 
 export async function deleteCollection(id: string) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const { data: existing, error: fetchErr } = await supabase
     .from('collections')
@@ -128,8 +113,8 @@ export async function deleteCollection(id: string) {
     .eq('id', id)
 
   if (error) {
-    console.error('deleteCollection error:', error.message, error.code)
-    throw new Error(`Failed to delete collection: ${error.message}`)
+    console.error('deleteCollection error:', error)
+    throw new Error('Failed to delete collection')
   }
 
   revalidateAll()
@@ -138,7 +123,7 @@ export async function deleteCollection(id: string) {
 export async function reorderCollections(
   items: { id: string; sort_order: number }[]
 ) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const results = await Promise.all(
     items.map(({ id, sort_order }) =>

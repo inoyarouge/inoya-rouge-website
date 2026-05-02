@@ -94,8 +94,8 @@ const sections = [
                 <div className="mt-8 pt-6 border-t border-brand-rose/20">
                     <p className="mb-4">If you would like to initiate a hassle-free return please click on the link below:</p>
                     <Link
-                        href="/contact"
-                        className="group/btn relative overflow-hidden inline-flex items-center justify-center bg-burgundy text-[15px] tracking-wide text-[#fff8f6] py-3 px-8 rounded-full"
+                        href="mailto:inoyarouge@gmail.com"
+                        className="group/btn relative overflow-hidden inline-flex items-center justify-center bg-burgundy text-[15px] tracking-wide text-[#fff8f6] py-3 px-8 rounded-none"
                     >
                         <span className="absolute top-0 -left-[100%] w-[60%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-25deg] transition-all duration-[800ms] ease-in-out group-hover/btn:left-[200%]" />
                         <span className="relative z-10">

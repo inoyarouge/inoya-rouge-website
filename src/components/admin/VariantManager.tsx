@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import type { ProductVariant } from '@/lib/types'
 import {
   DndContext,
@@ -240,10 +240,6 @@ export default function VariantManager({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isReordering, startReorder] = useTransition()
-
-  useEffect(() => {
-    setItems(variants)
-  }, [variants])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

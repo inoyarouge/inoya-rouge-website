@@ -1,22 +1,7 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-
-async function verifyAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  const { data } = await supabase
-    .from('admin_users')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .single()
-
-  if (!data) throw new Error('Unauthorized')
-  return supabase
-}
+import { requireAdmin } from '@/lib/auth/requireAdmin'
 
 function parsePromotionPayload(formData: FormData) {
   const name = (formData.get('name') as string)?.trim()
@@ -63,7 +48,7 @@ function parsePromotionPayload(formData: FormData) {
 }
 
 export async function createPromotion(formData: FormData) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
   const payload = parsePromotionPayload(formData)
 
   const { data, error } = await supabase
@@ -73,8 +58,8 @@ export async function createPromotion(formData: FormData) {
     .single()
 
   if (error) {
-    console.error('Supabase createPromotion error:', error.message, error.code, error.details)
-    throw new Error(`Failed to create promotion: ${error.message}`)
+    console.error('createPromotion error:', error)
+    throw new Error('Failed to create promotion')
   }
 
   revalidatePath('/admin/promotions')
@@ -84,7 +69,7 @@ export async function createPromotion(formData: FormData) {
 }
 
 export async function updatePromotion(id: string, formData: FormData) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
   const payload = parsePromotionPayload(formData)
 
   const { error } = await supabase
@@ -93,8 +78,8 @@ export async function updatePromotion(id: string, formData: FormData) {
     .eq('id', id)
 
   if (error) {
-    console.error('Supabase updatePromotion error:', error.message, error.code, error.details)
-    throw new Error(`Failed to update promotion: ${error.message}`)
+    console.error('updatePromotion error:', error)
+    throw new Error('Failed to update promotion')
   }
 
   revalidatePath('/admin/promotions')
@@ -104,12 +89,12 @@ export async function updatePromotion(id: string, formData: FormData) {
 }
 
 export async function deletePromotion(id: string) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const { error } = await supabase.from('promotions').delete().eq('id', id)
   if (error) {
-    console.error('Supabase deletePromotion error:', error.message, error.code, error.details)
-    throw new Error(`Failed to delete promotion: ${error.message}`)
+    console.error('deletePromotion error:', error)
+    throw new Error('Failed to delete promotion')
   }
 
   revalidatePath('/admin/promotions')
@@ -118,7 +103,7 @@ export async function deletePromotion(id: string) {
 }
 
 export async function togglePromotionActive(id: string, is_active: boolean) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const { error } = await supabase
     .from('promotions')
@@ -126,8 +111,8 @@ export async function togglePromotionActive(id: string, is_active: boolean) {
     .eq('id', id)
 
   if (error) {
-    console.error('Supabase togglePromotion error:', error.message, error.code, error.details)
-    throw new Error(`Failed to toggle promotion: ${error.message}`)
+    console.error('togglePromotion error:', error)
+    throw new Error('Failed to toggle promotion')
   }
 
   revalidatePath('/admin/promotions')

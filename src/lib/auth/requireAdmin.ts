@@ -2,11 +2,11 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 export async function requireAdmin() {
+  const supabase = await createClient()
   let userId: string | null = null
   let isAdmin = false
 
   try {
-    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     userId = user?.id ?? null
 
@@ -23,5 +23,5 @@ export async function requireAdmin() {
   }
 
   if (!userId || !isAdmin) redirect('/admin/login')
-  return { id: userId }
+  return { id: userId, supabase }
 }

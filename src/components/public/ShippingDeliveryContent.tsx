@@ -78,27 +78,23 @@ export default function ShippingDeliveryContent() {
     const sectionRefs = useRef<(HTMLElement | null)[]>([])
 
     useEffect(() => {
-        const handleScroll = () => {
-            const offsets = sectionRefs.current.map((ref) => {
-                if (!ref) return { id: '', offset: Infinity }
-                const rect = ref.getBoundingClientRect()
-                return {
-                    id: ref.id,
-                    offset: Math.abs(rect.top - 150),
+        const visible = new Set<string>()
+        const observer = new IntersectionObserver(
+            (entries) => {
+                for (const entry of entries) {
+                    if (entry.isIntersecting) visible.add(entry.target.id)
+                    else visible.delete(entry.target.id)
                 }
-            })
+                const firstInOrder = sections.find((s) => visible.has(s.id))?.id
+                if (firstInOrder) setActiveSection(firstInOrder)
+            },
+            { rootMargin: '-150px 0px -60% 0px', threshold: 0 },
+        )
 
-            if (offsets.length > 0) {
-                const closest = offsets.reduce((prev, curr) => (prev.offset < curr.offset ? prev : curr))
-                if (closest.id) {
-                    setActiveSection(closest.id)
-                }
-            }
+        for (const ref of sectionRefs.current) {
+            if (ref) observer.observe(ref)
         }
-
-        handleScroll()
-        window.addEventListener('scroll', handleScroll, { passive: true })
-        return () => window.removeEventListener('scroll', handleScroll)
+        return () => observer.disconnect()
     }, [])
 
     const scrollToSection = (id: string) => {

@@ -146,6 +146,7 @@ export default function ShopClient({
                   alt={currentHero.title}
                   fill
                   priority
+                  quality={80}
                   className="hidden md:block object-cover"
                   sizes="100vw"
                 />
@@ -153,7 +154,8 @@ export default function ShopClient({
                   src={currentHero.mobileImage}
                   alt={currentHero.title}
                   fill
-                  priority
+                  loading="eager"
+                  quality={75}
                   className={`block md:hidden object-cover ${currentHero.mobileImageClass || ''}`}
                   sizes="100vw"
                 />
@@ -164,12 +166,13 @@ export default function ShopClient({
                 alt={currentHero.title}
                 fill
                 priority
+                quality={80}
                 className="object-cover"
                 sizes="100vw"
               />
             )}
-            {/* Dark overlay — always on for dark theme, and on mobile for light theme to ensure white text is legible */}
-            <div className={`absolute inset-0 bg-black/20 ${currentHero.theme === 'light' ? 'max-md:block hidden' : ''}`} />
+            {/* Dark overlay — reduced by 20% for mobile as requested */}
+            <div className={`absolute inset-0 ${currentHero.theme === 'light' ? 'max-md:block hidden bg-black/0' : 'bg-black/0'}`} />
           </motion.div>
         </AnimatePresence>
 
@@ -473,6 +476,7 @@ export default function ShopClient({
                       alt="More products coming soon"
                       width={1200}
                       height={700}
+                      quality={65}
                       className="hidden md:block w-full h-auto object-cover"
                       sizes="(max-width: 768px) 100vw, 75vw"
                     />
@@ -483,6 +487,7 @@ export default function ShopClient({
                         alt="More products coming soon"
                         width={1200}
                         height={700}
+                        quality={65}
                         className="w-full h-auto"
                         style={{ transform: 'scale(1) translateX(15%)' }}
                         sizes="100vw"

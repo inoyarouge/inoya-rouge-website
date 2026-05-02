@@ -1,25 +1,10 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-
-async function verifyAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  const { data } = await supabase
-    .from('admin_users')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .single()
-
-  if (!data) throw new Error('Unauthorized')
-  return supabase
-}
+import { requireAdmin } from '@/lib/auth/requireAdmin'
 
 export async function approveTestimonial(id: string) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
   const { error } = await supabase
     .from('testimonials')
     .update({ status: 'approved' })
@@ -30,7 +15,7 @@ export async function approveTestimonial(id: string) {
 }
 
 export async function rejectTestimonial(id: string) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
   const { error } = await supabase
     .from('testimonials')
     .update({ status: 'rejected' })
@@ -41,7 +26,7 @@ export async function rejectTestimonial(id: string) {
 }
 
 export async function deleteTestimonial(id: string) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
   const { error } = await supabase
     .from('testimonials')
     .delete()
@@ -52,7 +37,7 @@ export async function deleteTestimonial(id: string) {
 }
 
 export async function reorderTestimonials(items: { id: string; sort_order: number }[]) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const results = await Promise.all(
     items.map(({ id, sort_order }) =>

@@ -1,7 +1,6 @@
-import { Suspense } from 'react'
+import { Suspense, cache } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import ShadeSelector from '@/components/public/ShadeSelector'
 import ProductAccordion from '@/components/public/ProductAccordion'
@@ -14,18 +13,23 @@ import { normalizeDiscount, isPromotionLive, promotionAppliesTo } from '@/lib/pr
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+const getProductBySlug = cache(async (slug: string) => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('products')
+    .select('*, product_variants(*, discounts(*), variant_images(*)), discounts(*)')
+    .eq('slug', slug)
+    .single()
+  return data
+})
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createClient()
-  const { data: product } = await supabase
-    .from('products')
-    .select('name, tagline, description')
-    .eq('slug', slug)
-    .single()
+  const product = await getProductBySlug(slug)
 
   return {
     title: product ? `${product.name} | Inoya Rouge` : 'Product | Inoya Rouge',
@@ -36,7 +40,7 @@ export async function generateMetadata({
 
 function SkeletonRelated() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-8 md:gap-y-12">
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} className="flex flex-col">
           <div className="aspect-[4/5] bg-gray-100 rounded-sm animate-pulse" />
@@ -88,9 +92,9 @@ async function RelatedProducts({
   if (!products.length) return null
 
   return (
-    <section className="max-w-6xl mx-auto px-4 py-12 md:py-16">
-      <h2 className="font-serif text-2xl mb-6">You May Also Like</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+    <section className="max-w-6xl mx-auto px-4 py-8 md:py-16">
+      <h2 className="font-serif text-xl md:text-2xl mb-4 md:mb-6">You May Also Like</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-8 md:gap-y-12">
         {products.map(p => (
           <ProductCard key={p.id} product={p} variant="shop" />
         ))}
@@ -107,19 +111,14 @@ export default async function ProductDetailPage({
   const { slug } = await params
   const supabase = await createClient()
 
-  const [productRes, promotionsRes] = await Promise.all([
-    supabase
-      .from('products')
-      .select('*, product_variants(*, discounts(*), variant_images(*)), discounts(*)')
-      .eq('slug', slug)
-      .single(),
+  const [rawProduct, promotionsRes] = await Promise.all([
+    getProductBySlug(slug),
     supabase
       .from('promotions')
       .select('*')
       .eq('is_active', true),
   ])
 
-  const rawProduct = productRes.data
   if (!rawProduct) notFound()
 
   const product: Product = {

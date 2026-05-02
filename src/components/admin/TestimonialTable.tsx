@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import type { Testimonial } from '@/lib/types'
 import StatusBadge from './StatusBadge'
 import {
@@ -202,10 +202,6 @@ export default function TestimonialTable({
   const [items, setItems] = useState(testimonials)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [isReordering, startReorder] = useTransition()
-
-  useEffect(() => {
-    setItems(testimonials)
-  }, [testimonials])
 
   const canDrag = filter === 'approved' && search === ''
 
