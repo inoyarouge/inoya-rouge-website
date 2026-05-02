@@ -10,7 +10,7 @@ const navLinks = [
     dropdown: [
       { name: 'EYES', image: '/images/categories/eyes.png', href: '/shop/eyes' },
       { name: 'FACE', image: '/images/categories/face.png', href: '/shop/face' },
-      { name: 'LIPS', image: '/images/categories/lips.png', href: '/shop/lips' },
+      { name: 'LIPS', image: '/images/categories/lips.jpeg', href: '/shop/lips' },
     ],
   },
   { href: '/about-us', label: 'ABOUT US' },

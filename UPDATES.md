@@ -1,3 +1,132 @@
+## 2026-05-03 — Security audit remediation (Findings #1, #2, #4-#7 + quick wins)
+
+**Status:** DONE (typecheck passes, build passes, `npm audit` reports 0 critical / 0 high)
+
+Acted on the security audit at `C:\Users\rijup\.claude\plans\role-you-are-a-noble-prism.md`. Worked through findings in priority order.
+
+**Changes shipped:**
+1. **CRITICAL — Patch Next.js** from 15.1.11 → ^15.5.15. Closes GHSA-f82v-jwr5-mffw (Authorization Bypass in Middleware, CVSS 9.1) plus 9 other CVEs surfaced by `npm audit`. The middleware bypass directly affects this app's admin gate.
+2. **HIGH — Server-side MIME/size validation** on `uploadVariantImage` and `uploadVariantImages` in `src/app/admin/(protected)/products/actions.ts`. Today validation is client-only in `ImageUploader.tsx`. Also derive file extension from `file.type` (not `file.name`) to neutralize trailing-dot tricks.
+3. **HIGH — Testimonial input hardening** in `src/app/(public)/community/actions.ts`. Reject inputs containing HTML tags (`/<[^>]+>/`) and strip Unicode bidi/zero-width characters before insert. Defense-in-depth — content is already React-escaped on render, but this prevents shape-spoofing in the moderation queue.
+4. **HIGH — DB-backed testimonial rate limit** replacing the in-process `Map`. Vercel cold starts reset the Map; concurrent requests land on different instances. New `rate_limits` table (RLS-locked, anon-insert via WITH CHECK). IP source switched from `x-forwarded-for[0]` to Vercel-trusted `x-real-ip`.
+5. **MEDIUM — Generic error throws** across all admin actions (`products/`, `promotions/`, `collections/`, `testimonials/` actions.ts). Server still logs full Postgres details; client only sees "Failed to do X". Prevents schema-fingerprinting via the Next error overlay.
+6. **MEDIUM — Tighten middleware matcher** to `/admin/:path*` so the auth-cookie refresh and gating only run on admin routes. Drops the unnecessary public-path branch.
+7. **Quick win** — remove `console.error(error)` from `src/app/admin/(protected)/products/error.tsx` (logged full Error including stack to admin browser console).
+
+**Out of scope for this pass (require external dashboard/infra access):**
+- Finding #3 — Supabase admin TOTP MFA + lower email/password sign-in rate limit (Supabase dashboard).
+- Finding #2 Option A — Upstash Redis rate limit (chose DB-backed instead, no new infra needed).
+- Anon key rotation (Supabase dashboard).
+- Tightening CSP `script-src` to drop `unsafe-inline`/`unsafe-eval` (deferred — requires verification pass that no inline `<script>` survives a build).
+
+**Files to modify:**
+- `package.json`, `package-lock.json` (Next.js bump)
+- `src/app/admin/(protected)/products/actions.ts` (upload validation + generic errors)
+- `src/app/admin/(protected)/promotions/actions.ts` (generic errors)
+- `src/app/admin/(protected)/collections/actions.ts` (generic errors)
+- `src/app/(public)/community/actions.ts` (input hardening + DB rate limit + IP source)
+- `src/app/admin/(protected)/products/error.tsx` (strip raw error log)
+- `src/middleware.ts` (matcher tightening)
+- DB: new `rate_limits` table (migration applied via Supabase MCP)
+
+**Verification:**
+- `npx tsc --noEmit` — clean.
+- `npm run build` — clean. 15 routes prerendered, bundle sizes unchanged from prior build (admin 108–164 kB, public 107–166 kB).
+- `npm audit` — 0 critical / 0 high / 2 moderate (postcss build-tooling XSS in CSS stringify; "fix" would downgrade Next to v9, so held).
+- Migration `add_rate_limits_table` confirmed applied via Supabase MCP.
+
+**Live-DB hardening pass via Supabase MCP `get_advisors` (caught regressions invisible from file-only review):**
+
+3 NEW security findings the file audit missed — all closed:
+- **🟠 testimonials INSERT was `WITH CHECK (true)`** — a regression vs. `plan.md`'s declared `WITH CHECK (status = 'pending')`. Public clients could insert pre-approved testimonials and bypass moderation entirely. Replaced with `testimonials_public_insert` policy that enforces `status = 'pending'`.
+- **🟠 admin_users SELECT used `auth.role() = 'authenticated'`** — the exact anti-pattern CLAUDE.md prohibits. Any signed-in Supabase user (not just admins) could enumerate the admin list. Replaced with `admin_users_self_select` (`user_id = auth.uid()`), which is all the middleware/requireAdmin actually needs.
+- **🟡 storage `Public read` on `product-images` allowed bucket listing.** Tightened to `bucket_id = 'product-images' AND name IS NOT NULL` — public URL access still works, list-bucket calls now return empty.
+
+Performance pass — 22 advisor warnings → 0:
+- Wrapped `auth.uid()` in `(select auth.uid())` across all admin RLS policies (one-time per query instead of per row).
+- Split every `FOR ALL` admin policy into separate INSERT / UPDATE / DELETE policies so the `Public read` SELECT path no longer overlaps for authenticated users.
+- Restricted `testimonials_public_read_approved` to the `anon` role only (admins go through `testimonials_admin_select`).
+- Added covering index `product_variants_product_id_idx` for the FK.
+
+**Migrations applied (via Supabase MCP):**
+- `add_rate_limits_table` — rate-limit ledger + SECURITY DEFINER `rate_limit_check_and_record(bucket, max, window)` RPC.
+- `security_hardening_post_audit` — items above #1–#5.
+- `testimonials_public_read_anon_only` — final perf cleanup.
+
+Final advisor state: 0 actionable security findings, 0 actionable perf findings. The 4 remaining security advisor warnings are all intentional and explained in code: `rate_limits_anon_insert` is gated by the SECURITY DEFINER RPC; the SECURITY DEFINER function is the only safe way for anon to participate in rate-limiting; leaked-password protection requires Supabase dashboard.
+
+**Still requires Supabase dashboard / out-of-band action:**
+- Enable HaveIBeenPwned-backed leaked-password protection (Auth → Password Security).
+- Enable TOTP MFA on the admin account + lower email/password sign-in rate limit to ~5/hr/IP (Auth → Rate Limits, Auth → Multi-factor).
+- Rotate the anon key (API → Regenerate). Update `.env.local` and redeploy after.
+
+**Manual smoke tests still pending (require running dev server / live admin):**
+- Admin login round-trip on Next 15.5.15.
+- Testimonial submission of `<script>alert(1)</script>` → expect "HTML is not allowed in submissions."
+- 4 testimonial submissions in <1h from same IP → expect 4th to return "Please wait before submitting again."
+- Admin upload of `test.html` renamed `test.png` → expect "Unsupported file type — JPEG, PNG, or WebP only".
+
+---
+
+## 2026-05-02 — Performance audit & cleanup pass (Tier 1 + Tier 2 wins)
+
+**Status:** DONE
+
+End-to-end perf audit before launch. Goal: cut JS payload on non-animated pages, fix two CLAUDE.md violations, dedupe redundant server-action auth checks, and remove a few wasted re-renders / sequential operations. Visual design unchanged.
+
+**Changes (grouped):**
+
+1. **Lazy-loaded smooth scroll on a per-route basis** — created [src/components/providers/SmoothScrollGate.tsx](src/components/providers/SmoothScrollGate.tsx), a tiny client wrapper that uses `usePathname()` + `next/dynamic({ ssr: false })` to only mount `SmoothScrollProvider` on routes that actually run scroll-trigger animations (`/`, `/about-us`, `/shop/[slug]`). Replaced the static import in [src/app/layout.tsx](src/app/layout.tsx) with the gate. Result: Lenis (~14KB) + GSAP core + ScrollTrigger (~70KB) no longer ship to `/contact`, `/privacy-policy`, `/orders-and-payments`, `/shipping-and-delivery`, `/returns-and-refunds`, `/product-information`, `/community`, or `/shop` (non-detail). These pages now report 110–117 KB First Load JS (was ~170 KB).
+
+2. **Added next/image AVIF + WebP** — [next.config.js](next.config.js#L24) now declares `formats: ['image/avif', 'image/webp']`. Modern browsers will receive 30–50% smaller image payloads at no code-site cost.
+
+3. **CLAUDE.md violation fix: shade swatch border → ring** — [src/components/public/ProductCard.tsx:97](src/components/public/ProductCard.tsx#L97) was toggling `border-burgundy` ↔ `border-burgundy/20` on selection, which changes box size and triggers CLS on click. Now uses a stable border + `ring-1 ring-burgundy ring-offset-1` for the active state. `ShadeSelector` already used `ring` correctly — left alone.
+
+4. **CLAUDE.md violation fix: product-grid base column count** — three grids shipped `grid-cols-2` as the mobile base (too cramped). Fixed in [src/app/(public)/shop/page.tsx:19](src/app/(public)/shop/page.tsx#L19), [src/app/(public)/shop/[slug]/page.tsx:39](src/app/(public)/shop/%5Bslug%5D/page.tsx#L39), and [src/app/(public)/shop/[slug]/page.tsx:93](src/app/(public)/shop/%5Bslug%5D/page.tsx#L93) — now `grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4`.
+
+5. **Dedup server-action auth** — every CRUD action under `/admin/(protected)/{products,collections,testimonials,promotions}/actions.ts` had its own near-identical `verifyAdmin()` helper (4 copies, ~14 lines each). Consolidated into the existing [src/lib/auth/requireAdmin.ts](src/lib/auth/requireAdmin.ts), which now also returns the supabase client (`{ id, supabase }`) so call sites stay one-liners. Type-only reference at line 232 / 423 of products/actions.ts (`Awaited<ReturnType<typeof verifyAdmin>>`) replaced with a local `SupabaseServerClient` alias. The admin layout (`requireAdmin().` w/o destructuring the new field) keeps working.
+
+6. **Shared product-detail fetch via React `cache()`** — [src/app/(public)/shop/[slug]/page.tsx](src/app/(public)/shop/%5Bslug%5D/page.tsx#L17) was firing two separate Supabase queries per request (one in `generateMetadata`, one in the page body). Now both call a `cache()`-wrapped `getProductBySlug(slug)` so a single round-trip serves both. Also cleaned up the unused `Image` import.
+
+7. **TrustTicker / TrustBadges → server components** — both files were marked `'use client'` only because of `<style jsx>`. Hoisted the shared `@keyframes ticker` + `.animate-ticker` rules to [src/styles/globals.css](src/styles/globals.css), parameterized the speed via `--ticker-duration` CSS variable, and dropped `'use client'` from [TrustTicker.tsx](src/components/public/TrustTicker.tsx) and [TrustBadges.tsx](src/components/public/TrustBadges.tsx). One less hydration cost on every public page.
+
+8. **Dropped resync-on-prop `useEffect` in 4 admin tables** — same class of bug already fixed in `VariantImageGallery` per the 2026-05-02 entry below. Removed `useEffect(() => setItems(props))` from [ProductTable.tsx](src/components/admin/ProductTable.tsx#L181), [VariantManager.tsx](src/components/admin/VariantManager.tsx#L244), [TestimonialTable.tsx](src/components/admin/TestimonialTable.tsx#L206), [CollectionManager.tsx](src/components/admin/CollectionManager.tsx#L207) — local optimistic state is now authoritative; mounts already pick up new props on row switch. Trimmed the now-unused `useEffect` import from each.
+
+9. **CuratedCollectionCarousel listener cleanup** — replaced the `window.addEventListener('resize', …)` + `setTimeout(50)` polling pattern at [CuratedCollectionCarousel.tsx:36-51](src/components/public/CuratedCollectionCarousel.tsx#L36) with a `ResizeObserver` on the actual image box. No more global resize work, no more timers, fires only when the watched element actually changes size.
+
+10. **ShippingDeliveryContent scroll listener → IntersectionObserver** — [ShippingDeliveryContent.tsx:80-102](src/components/public/ShippingDeliveryContent.tsx#L80) used a `window.scroll` handler that re-measured every section's `getBoundingClientRect()` per scroll tick. Replaced with one `IntersectionObserver` (`rootMargin: '-150px 0px -60% 0px'`) that updates `activeSection` only when the active section actually changes. Eliminates per-frame layout reads on long pages.
+
+11. **Parallelized variant image uploads** — `uploadVariantImages` in [products/actions.ts:440-503](src/app/admin/%28protected%29/products/actions.ts#L440) was sequential: per file, await upload → await insert. Rewrote as `Promise.all` for the storage uploads, then a single batch `insert([...])` of all rows. `sort_order` derived from array index for determinism. Failure rolls back by removing all uploaded objects in one call. For an N-image batch, latency drops from O(N) to O(1) round-trips for the DB and parallel for storage.
+
+12. **Navbar → server component, mobile menu state isolated** — [Navbar.tsx](src/components/public/Navbar.tsx) was marked `'use client'` for a single `openDropdown` state used only by the mobile accordion. Extracted that block into a new [src/components/public/MobileNav.tsx](src/components/public/MobileNav.tsx) client island; the rest of the navbar (logo, desktop links, mega-dropdown — which is hover-CSS only) is now server-rendered. Reduces hydration cost on every public page.
+
+**Files touched:**
+- Created: [src/components/providers/SmoothScrollGate.tsx](src/components/providers/SmoothScrollGate.tsx), [src/components/public/MobileNav.tsx](src/components/public/MobileNav.tsx)
+- Modified: [next.config.js](next.config.js), [src/app/layout.tsx](src/app/layout.tsx), [src/app/(public)/shop/page.tsx](src/app/%28public%29/shop/page.tsx), [src/app/(public)/shop/[slug]/page.tsx](src/app/%28public%29/shop/%5Bslug%5D/page.tsx), [src/components/public/ProductCard.tsx](src/components/public/ProductCard.tsx), [src/components/public/Navbar.tsx](src/components/public/Navbar.tsx), [src/components/public/TrustTicker.tsx](src/components/public/TrustTicker.tsx), [src/components/public/TrustBadges.tsx](src/components/public/TrustBadges.tsx), [src/components/public/CuratedCollectionCarousel.tsx](src/components/public/CuratedCollectionCarousel.tsx), [src/components/public/ShippingDeliveryContent.tsx](src/components/public/ShippingDeliveryContent.tsx), [src/components/admin/ProductTable.tsx](src/components/admin/ProductTable.tsx), [src/components/admin/VariantManager.tsx](src/components/admin/VariantManager.tsx), [src/components/admin/TestimonialTable.tsx](src/components/admin/TestimonialTable.tsx), [src/components/admin/CollectionManager.tsx](src/components/admin/CollectionManager.tsx), [src/app/admin/(protected)/products/actions.ts](src/app/admin/%28protected%29/products/actions.ts), [src/app/admin/(protected)/collections/actions.ts](src/app/admin/%28protected%29/collections/actions.ts), [src/app/admin/(protected)/testimonials/actions.ts](src/app/admin/%28protected%29/testimonials/actions.ts), [src/app/admin/(protected)/promotions/actions.ts](src/app/admin/%28protected%29/promotions/actions.ts), [src/lib/auth/requireAdmin.ts](src/lib/auth/requireAdmin.ts), [src/styles/globals.css](src/styles/globals.css)
+
+**Explicitly NOT done (logged for follow-up):**
+- Tightening CSP `'unsafe-inline' 'unsafe-eval'` — security review, separate task.
+- Removing `dangerouslyAllowSVG: true` from next.config — content-trust decision.
+- Dropping framer-motion in favor of CSS for `ScrollRevealText` / `CookieNotice` GSAP — Tier 3 nice-to-haves; ~60–100 KB more savings if revisited.
+- Gating `<SmoothWavyCanvas>` in `PromotionBanner` behind IntersectionObserver — Tier 3.
+- Adding `experimental.optimizePackageImports` for `lucide-react` — small win, can revisit when bundle analyzer is set up.
+
+**Verification:** `npm run build` (after `rm -rf .next` to drop stale cache) completed `Generating static pages (15/15)` with no type errors. Bundle deltas observed in build output:
+- `/orders-and-payments` 110 kB First Load (was ~170 kB) — Lenis/GSAP gone
+- `/privacy-policy` 114 kB
+- `/product-information` 110 kB
+- `/returns-and-refunds` 117 kB
+- `/shipping-and-delivery` 112 kB
+- `/community` 158 kB (still loads framer-motion via CommunityClient)
+- `/contact` 162 kB (still loads framer-motion via ContactClient)
+- `/about-us` 160 kB (whitelisted for Lenis/GSAP because it has scroll-reveal animations)
+- `/shop` 167 kB, `/shop/[slug]` 169 kB (whitelisted)
+- `/` 169 kB (whitelisted)
+
+Manual smoke test still pending (dev server not started in this pass): homepage hero LCP, shop swatch click (no nav, ring not border), `/shop/[slug]` shade selector + Buy Now, SSG pages render with native scroll, admin product create/edit + multi-image upload + drag reorder.
+
+---
+
 ## 2026-05-02 — Fix: Vercel build failed prerendering `/_not-found` (useSearchParams Suspense bailout)
 
 **Status:** DONE
