@@ -10,7 +10,7 @@ export default function ProductsError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error(error)
+    console.error('Products page error')
   }, [error])
 
   return (

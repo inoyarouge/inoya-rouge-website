@@ -3,24 +3,30 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { slugify } from '@/lib/slug'
+import { requireAdmin } from '@/lib/auth/requireAdmin'
 
-async function verifyAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
-  const { data } = await supabase
-    .from('admin_users')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .single()
+const ALLOWED_IMAGE_TYPES = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+} as const
+type AllowedImageType = keyof typeof ALLOWED_IMAGE_TYPES
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
-  if (!data) throw new Error('Unauthorized')
-  return supabase
+function assertImageFile(file: File): AllowedImageType {
+  if (!(file.type in ALLOWED_IMAGE_TYPES)) {
+    throw new Error('Unsupported file type — JPEG, PNG, or WebP only')
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    throw new Error('File exceeds 5MB')
+  }
+  return file.type as AllowedImageType
 }
 
 async function upsertDiscount(
-  supabase: Awaited<ReturnType<typeof verifyAdmin>>,
+  supabase: SupabaseServerClient,
   target: { productId: string } | { variantId: string },
   formData: FormData,
 ) {
@@ -32,8 +38,8 @@ async function upsertDiscount(
   if (!enabled) {
     const { error } = await supabase.from('discounts').delete().eq(scopeColumn, scopeValue)
     if (error) {
-      console.error('Supabase deleteDiscount error:', error.message, error.code, error.details)
-      throw new Error(`Failed to clear discount: ${error.message}`)
+      console.error('deleteDiscount error:', error)
+      throw new Error('Failed to clear discount')
     }
     return
   }
@@ -61,15 +67,15 @@ async function upsertDiscount(
     .from('discounts')
     .upsert(payload, { onConflict: scopeColumn })
   if (error) {
-    console.error('Supabase upsertDiscount error:', error.message, error.code, error.details)
-    throw new Error(`Failed to save discount: ${error.message}`)
+    console.error('upsertDiscount error:', error)
+    throw new Error('Failed to save discount')
   }
 }
 
 // --- Products ---
 
 export async function createProduct(formData: FormData) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const name = formData.get('name') as string
   const baseSlug = slugify(name) || 'product'
@@ -110,8 +116,8 @@ export async function createProduct(formData: FormData) {
     .single()
 
   if (error) {
-    console.error('Supabase createProduct error:', error.message, error.code, error.details)
-    throw new Error(`Failed to create product: ${error.message}`)
+    console.error('createProduct error:', error)
+    throw new Error('Failed to create product')
   }
 
   await upsertDiscount(supabase, { productId: data.id }, formData)
@@ -124,7 +130,7 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(id: string, formData: FormData) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const name = formData.get('name') as string
 
@@ -176,8 +182,8 @@ export async function updateProduct(id: string, formData: FormData) {
     .eq('id', id)
 
   if (error) {
-    console.error('Supabase updateProduct error:', error.message, error.code, error.details)
-    throw new Error(`Failed to update product: ${error.message}`)
+    console.error('updateProduct error:', error)
+    throw new Error('Failed to update product')
   }
 
   await upsertDiscount(supabase, { productId: id }, formData)
@@ -192,7 +198,7 @@ export async function updateProduct(id: string, formData: FormData) {
 }
 
 export async function deleteProduct(id: string) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   // Delete variant images from storage first
   const { data: variants } = await supabase
@@ -217,14 +223,14 @@ export async function deleteProduct(id: string) {
 
   const { error } = await supabase.from('products').delete().eq('id', id)
   if (error) {
-    console.error('Supabase deleteProduct error:', error.message, error.code, error.details)
-    throw new Error(`Failed to delete product: ${error.message}`)
+    console.error('deleteProduct error:', error)
+    throw new Error('Failed to delete product')
   }
   revalidatePath('/admin/products')
 }
 
 export async function toggleProductActive(id: string, is_active: boolean) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const { error } = await supabase
     .from('products')
@@ -232,8 +238,8 @@ export async function toggleProductActive(id: string, is_active: boolean) {
     .eq('id', id)
 
   if (error) {
-    console.error('Supabase toggleProduct error:', error.message, error.code, error.details)
-    throw new Error(`Failed to toggle product: ${error.message}`)
+    console.error('toggleProduct error:', error)
+    throw new Error('Failed to toggle product')
   }
   revalidatePath('/admin/products')
 }
@@ -241,7 +247,7 @@ export async function toggleProductActive(id: string, is_active: boolean) {
 // --- Variants ---
 
 async function revalidateStorefrontForProduct(
-  supabase: Awaited<ReturnType<typeof verifyAdmin>>,
+  supabase: SupabaseServerClient,
   productId: string,
 ) {
   const { data } = await supabase.from('products').select('slug').eq('id', productId).single()
@@ -251,7 +257,7 @@ async function revalidateStorefrontForProduct(
 }
 
 export async function createVariant(productId: string, formData: FormData) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const { data, error } = await supabase
     .from('product_variants')
@@ -270,8 +276,8 @@ export async function createVariant(productId: string, formData: FormData) {
     .single()
 
   if (error) {
-    console.error('Supabase createVariant error:', error.message, error.code, error.details)
-    throw new Error(`Failed to create variant: ${error.message}`)
+    console.error('createVariant error:', error)
+    throw new Error('Failed to create variant')
   }
 
   await upsertDiscount(supabase, { variantId: data.id }, formData)
@@ -286,7 +292,7 @@ export async function updateVariant(
   productId: string,
   formData: FormData
 ) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const { error } = await supabase
     .from('product_variants')
@@ -303,8 +309,8 @@ export async function updateVariant(
     .eq('id', id)
 
   if (error) {
-    console.error('Supabase updateVariant error:', error.message, error.code, error.details)
-    throw new Error(`Failed to update variant: ${error.message}`)
+    console.error('updateVariant error:', error)
+    throw new Error('Failed to update variant')
   }
 
   await upsertDiscount(supabase, { variantId: id }, formData)
@@ -314,7 +320,7 @@ export async function updateVariant(
 }
 
 export async function deleteVariant(id: string, productId: string, imageUrl: string | null) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   // Pull all gallery storage paths so we can remove them in one batch.
   const { data: galleryRows } = await supabase
@@ -343,15 +349,15 @@ export async function deleteVariant(id: string, productId: string, imageUrl: str
     .eq('id', id)
 
   if (error) {
-    console.error('Supabase deleteVariant error:', error.message, error.code, error.details)
-    throw new Error(`Failed to delete variant: ${error.message}`)
+    console.error('deleteVariant error:', error)
+    throw new Error('Failed to delete variant')
   }
   revalidatePath(`/admin/products/${productId}`)
   await revalidateStorefrontForProduct(supabase, productId)
 }
 
 export async function toggleVariantActive(id: string, productId: string, is_active: boolean) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const { error } = await supabase
     .from('product_variants')
@@ -359,8 +365,8 @@ export async function toggleVariantActive(id: string, productId: string, is_acti
     .eq('id', id)
 
   if (error) {
-    console.error('Supabase toggleVariant error:', error.message, error.code, error.details)
-    throw new Error(`Failed to toggle variant: ${error.message}`)
+    console.error('toggleVariant error:', error)
+    throw new Error('Failed to toggle variant')
   }
   revalidatePath(`/admin/products/${productId}`)
   revalidatePath('/shop')
@@ -368,7 +374,7 @@ export async function toggleVariantActive(id: string, productId: string, is_acti
 }
 
 export async function reorderProducts(items: { id: string; sort_order: number }[]) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const results = await Promise.all(
     items.map(({ id, sort_order }) =>
@@ -386,7 +392,7 @@ export async function reorderVariants(
   productId: string,
   items: { id: string; sort_order: number }[]
 ) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const results = await Promise.all(
     items.map(({ id, sort_order }) =>
@@ -405,12 +411,13 @@ export async function uploadVariantImage(
   variantId: string,
   formData: FormData
 ) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const file = formData.get('file') as File
   if (!file) throw new Error('No file provided')
 
-  const ext = file.name.split('.').pop()
+  const mime = assertImageFile(file)
+  const ext = ALLOWED_IMAGE_TYPES[mime]
   const path = `${productId}/${variantId}_${Date.now()}.${ext}`
 
   const { error: uploadError } = await supabase.storage
@@ -418,8 +425,8 @@ export async function uploadVariantImage(
     .upload(path, file)
 
   if (uploadError) {
-    console.error('Supabase uploadImage error:', uploadError.message)
-    throw new Error(`Failed to upload image: ${uploadError.message}`)
+    console.error('Supabase uploadImage error:', uploadError)
+    throw new Error('Failed to upload image')
   }
 
   const { data: urlData } = supabase.storage
@@ -432,7 +439,7 @@ export async function uploadVariantImage(
 // --- Variant image gallery (multi-image per shade) ---
 
 async function syncVariantPrimaryImage(
-  supabase: Awaited<ReturnType<typeof verifyAdmin>>,
+  supabase: SupabaseServerClient,
   variantId: string,
 ) {
   const { data: primary } = await supabase
@@ -454,10 +461,12 @@ export async function uploadVariantImages(
   variantId: string,
   formData: FormData,
 ) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const files = formData.getAll('files').filter((f): f is File => f instanceof File && f.size > 0)
   if (files.length === 0) throw new Error('No files provided')
+
+  const fileMimes = files.map(assertImageFile)
 
   const { data: existing } = await supabase
     .from('variant_images')
@@ -467,44 +476,39 @@ export async function uploadVariantImages(
     .limit(1)
     .maybeSingle()
 
-  let nextSort = (existing?.sort_order ?? -1) + 1
-  const inserted: Array<{ id: string; variant_id: string; url: string; storage_path: string; sort_order: number; created_at: string }> = []
+  const baseSort = (existing?.sort_order ?? -1) + 1
+  const batchTimestamp = Date.now()
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i]
-    const ext = file.name.split('.').pop()
-    const storagePath = `${productId}/${variantId}_${Date.now()}_${i}.${ext}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(storagePath, file)
-
-    if (uploadError) {
-      console.error('Supabase uploadVariantImages upload error:', uploadError.message)
-      throw new Error(`Failed to upload image: ${uploadError.message}`)
-    }
-
-    const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(storagePath)
-
-    const { data: row, error: insertError } = await supabase
-      .from('variant_images')
-      .insert({
+  const uploads = await Promise.all(
+    files.map(async (file, i) => {
+      const ext = ALLOWED_IMAGE_TYPES[fileMimes[i]]
+      const storagePath = `${productId}/${variantId}_${batchTimestamp}_${i}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(storagePath, file)
+      if (uploadError) {
+        console.error('Supabase uploadVariantImages upload error:', uploadError)
+        throw new Error('Failed to upload image')
+      }
+      const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(storagePath)
+      return {
         variant_id: variantId,
         url: urlData.publicUrl,
         storage_path: storagePath,
-        sort_order: nextSort,
-      })
-      .select('*')
-      .single()
+        sort_order: baseSort + i,
+      }
+    }),
+  )
 
-    if (insertError) {
-      console.error('Supabase uploadVariantImages insert error:', insertError.message)
-      await supabase.storage.from('product-images').remove([storagePath])
-      throw new Error(`Failed to record image: ${insertError.message}`)
-    }
+  const { data: inserted, error: insertError } = await supabase
+    .from('variant_images')
+    .insert(uploads)
+    .select('*')
 
-    inserted.push(row)
-    nextSort++
+  if (insertError) {
+    console.error('Supabase uploadVariantImages insert error:', insertError)
+    await supabase.storage.from('product-images').remove(uploads.map((u) => u.storage_path))
+    throw new Error('Failed to record images')
   }
 
   await syncVariantPrimaryImage(supabase, variantId)
@@ -519,7 +523,7 @@ export async function deleteVariantImage(
   productId: string,
   variantId: string,
 ) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const { data: row, error: fetchErr } = await supabase
     .from('variant_images')
@@ -537,8 +541,8 @@ export async function deleteVariantImage(
 
   const { error: delErr } = await supabase.from('variant_images').delete().eq('id', imageId)
   if (delErr) {
-    console.error('Supabase deleteVariantImage error:', delErr.message)
-    throw new Error(`Failed to delete image: ${delErr.message}`)
+    console.error('deleteVariantImage error:', delErr)
+    throw new Error('Failed to delete image')
   }
 
   // Re-compact sort_order so 0..n-1 stays contiguous and the primary is always sort_order=0.
@@ -567,7 +571,7 @@ export async function reorderVariantImages(
   variantId: string,
   items: { id: string; sort_order: number }[],
 ) {
-  const supabase = await verifyAdmin()
+  const { supabase } = await requireAdmin()
 
   const results = await Promise.all(
     items.map(({ id, sort_order }) =>
