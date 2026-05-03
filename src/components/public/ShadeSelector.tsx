@@ -22,7 +22,11 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
   const [quantity, setQuantity] = useState(1)
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false)
   const [isOffersOpen, setIsOffersOpen] = useState(false)
-  const [appliedOfferIds, setAppliedOfferIds] = useState<string[]>([])
+  const [appliedOfferIds, setAppliedOfferIds] = useState<string[]>(() =>
+    getAvailableOffers(product, variants[0], promotions)
+      .filter((o) => o.source === 'product' || o.source === 'variant')
+      .map((o) => o.id),
+  )
 
   const selectedVariant = variants[selectedIndex] ?? variants[0]
 
@@ -46,12 +50,20 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
     [product, selectedVariant, promotions],
   )
 
-  // Drop any applied offer IDs that no longer exist after the shade/variant changes
-  // (e.g. switching to a shade without a variant-scoped discount).
+  // Reconcile applied offers when the shade/variant changes. Drops IDs that no
+  // longer exist (e.g. variant-scoped discount that doesn't carry over to a new
+  // shade) and re-applies any auto-apply offers that have appeared.
   useEffect(() => {
     setAppliedOfferIds((prev) => {
       const valid = prev.filter((id) => offers.some((o) => o.id === id))
-      return valid.length === prev.length ? prev : valid
+      const autoIds = offers
+        .filter((o) => o.source === 'product' || o.source === 'variant')
+        .map((o) => o.id)
+      const merged = Array.from(new Set([...valid, ...autoIds]))
+      return merged.length === prev.length &&
+        merged.every((id) => prev.includes(id))
+        ? prev
+        : merged
     })
   }, [offers])
 

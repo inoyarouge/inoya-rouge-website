@@ -1,3 +1,51 @@
+## 2026-05-03 — Fix: promotion banner overlapping navbar
+
+**Status:** DONE (typecheck clean)
+
+The site-wide promotion banner ([PromotionBanner.tsx](src/components/public/PromotionBanner.tsx)) was visually covering the fixed navbar. The banner was rendered as the first child of each page (in normal flow at `top: 0`) with `z-[60]`, while the navbar is `fixed top-0 z-50` — so where the two overlapped, the banner won the stacking context and obscured the navbar.
+
+**Fix:** in [src/components/public/PromotionBanner.tsx:74](src/components/public/PromotionBanner.tsx#L74) changed `z-[60]` → `z-40` and added `mt-[50px] md:mt-[60px]`. The banner now sits *below* the navbar (which keeps its `top-0 z-50`), with the margin-top matching the navbar's height (`h-[50px] md:h-[60px]` per [Navbar.tsx:24](src/components/public/Navbar.tsx#L24)), so the banner appears in the strip directly under the navbar instead of behind/over it.
+
+No structural / layout / per-page changes needed — pages still render `<PromotionBannerResolver />` as their first child; the spacing is encapsulated inside the banner component itself.
+
+**Files touched:**
+- `src/components/public/PromotionBanner.tsx` (one edit on the wrapper div).
+
+**Verification:**
+- `npx tsc --noEmit` — clean.
+- Manual smoke pending: load any page with an active promotion → expect navbar fully visible at top, banner sitting in the strip directly below it; dismissing the banner should leave the navbar in place with no shift.
+
+---
+
+## 2026-05-03 — Fix: product discount silently not applying on PDP
+
+**Status:** DONE (typecheck clean)
+
+A product-level discount configured in the admin (e.g. 20% off "Soothing pH Lip Oil", live within its date window, `is_active = true`) was correctly visible in the admin preview and on the shop grid — but the public product detail page rendered the raw price with no strikethrough or savings chip.
+
+**Root cause:** the PDP and the shop grid use two different price-computation paths.
+
+- `ProductCard` calls `computePrice(product, variant)` — auto-applies any live `product.discount` / `variant.discount`. ✓
+- `ShadeSelector` calls `computePriceFromOffers(basePrice, appliedOffers)` where `appliedOffers` is filtered by an `appliedOfferIds` state initialised to `[]`. Until the user opened the "AVAILABLE OFFERS" panel and clicked "Apply Offer", no discount applied — even for the product's own auto-discount. ✗
+
+This conflated product/variant discounts (meant to auto-apply, hence `is_active` + date window) with cross-product promotions (correctly opt-in).
+
+**Fix:** in [src/components/public/ShadeSelector.tsx](src/components/public/ShadeSelector.tsx), pre-select offers whose `source` is `'product'` or `'variant'` while leaving `'promotion'` offers opt-in. Two small edits:
+
+1. Lazy-init `appliedOfferIds` from `getAvailableOffers(product, variants[0], promotions)` filtered to the auto-apply sources.
+2. Extend the existing reconciliation `useEffect([offers])` to *also* union in newly-appearing auto-apply offer IDs (e.g. switching to a shade that has its own variant-level discount), not just drop stale ones.
+
+No schema, server-action, or pricing-helper changes were needed. `OffersPanel` will now render the auto-applied product offer in the "Applied" state (existing branch), which is the correct UX — user can see *why* the price is reduced and stack promotion offers on top.
+
+**Files touched:**
+- `src/components/public/ShadeSelector.tsx` (two edits, lines 25–29 and 53–68)
+
+**Verification:**
+- `npx tsc --noEmit` — clean.
+- Manual smoke pending: `/shop/soothing-ph-lip-oil` should now show ₹600.00 + ₹750.00 strikethrough + "Save 20%" chip on first paint, with the product offer pre-applied in the offers panel.
+
+---
+
 ## 2026-05-03 — Security audit remediation (Findings #1, #2, #4-#7 + quick wins)
 
 **Status:** DONE (typecheck passes, build passes, `npm audit` reports 0 critical / 0 high)

@@ -71,7 +71,7 @@ export default function PromotionBanner({ promotion }: { promotion: Promotion })
   }
 
   return (
-    <div className="relative z-[60] text-white min-h-[36px] flex items-center py-2 transition-all duration-300 overflow-hidden bg-burgundy">
+    <div className="relative z-40 mt-[50px] md:mt-[60px] text-white min-h-[36px] flex items-center py-2 transition-all duration-300 overflow-hidden bg-burgundy">
       <div className="absolute inset-0 w-full h-full pointer-events-none">
         <SmoothWavyCanvas
           backgroundColor="#7a0000"
