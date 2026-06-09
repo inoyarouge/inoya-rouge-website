@@ -1,6 +1,5 @@
-import { unstable_noStore as noStore } from 'next/cache'
 import PromotionBanner from './PromotionBanner'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import { isPromotionLive } from '@/lib/pricing'
 import type { Promotion } from '@/lib/types'
 
@@ -9,8 +8,7 @@ export default async function PromotionBannerResolver({
 }: {
   category?: string | null
 }) {
-  noStore()
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('promotions')
     .select('*')

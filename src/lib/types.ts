@@ -3,7 +3,6 @@ export type Product = {
   slug: string
   name: string
   description: string | null
-  tagline: string | null
   base_price: number
   category: 'Lips' | 'Eyes' | 'Face'
   collection: string | null
@@ -42,6 +41,13 @@ export type ProductVariant = {
   is_active: boolean
   sort_order: number
   created_at: string
+  // Per-shade description overrides. Blank/null = inherit the product-level value.
+  description: string | null
+  about_product: string | null
+  what_makes_unique: string | null
+  how_to_use: string | null
+  ingredients: string | null
+  additional_info: string | null
   discount?: Discount | null
   images?: VariantImage[]
 }

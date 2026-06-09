@@ -98,7 +98,6 @@ export async function createProduct(formData: FormData) {
     .insert({
       name,
       slug,
-      tagline: (formData.get('tagline') as string) || null,
       description: (formData.get('description') as string) || null,
       base_price: parseFloat(formData.get('base_price') as string),
       category: formData.get('category') as string,
@@ -165,7 +164,6 @@ export async function updateProduct(id: string, formData: FormData) {
     .update({
       name,
       slug,
-      tagline: (formData.get('tagline') as string) || null,
       description: (formData.get('description') as string) || null,
       base_price: parseFloat(formData.get('base_price') as string),
       category: formData.get('category') as string,
@@ -271,6 +269,12 @@ export async function createVariant(productId: string, formData: FormData) {
         : null,
       is_active: formData.get('is_active') === 'true',
       sort_order: parseInt(formData.get('sort_order') as string) || 0,
+      description: (formData.get('description') as string) || null,
+      about_product: (formData.get('about_product') as string) || null,
+      what_makes_unique: (formData.get('what_makes_unique') as string) || null,
+      how_to_use: (formData.get('how_to_use') as string) || null,
+      ingredients: (formData.get('ingredients') as string) || null,
+      additional_info: (formData.get('additional_info') as string) || null,
     })
     .select('id')
     .single()
@@ -305,6 +309,12 @@ export async function updateVariant(
         : null,
       is_active: formData.get('is_active') === 'true',
       sort_order: parseInt(formData.get('sort_order') as string) || 0,
+      description: (formData.get('description') as string) || null,
+      about_product: (formData.get('about_product') as string) || null,
+      what_makes_unique: (formData.get('what_makes_unique') as string) || null,
+      how_to_use: (formData.get('how_to_use') as string) || null,
+      ingredients: (formData.get('ingredients') as string) || null,
+      additional_info: (formData.get('additional_info') as string) || null,
     })
     .eq('id', id)
 

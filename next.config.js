@@ -20,6 +20,11 @@ const securityHeaders = [
 ]
 
 const nextConfig = {
+  experimental: {
+    // Tree-shake heavy barrel imports so only the icons/animations actually used
+    // are bundled, shrinking the client JS for every page.
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'gsap'],
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1440, 1920],

@@ -1,11 +1,10 @@
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import type { Testimonial } from '@/lib/types'
 import CommunityClient from './CommunityClient'
 import PromotionBannerResolver from '@/components/public/PromotionBannerResolver'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 300
 
 export const metadata: Metadata = {
   title: 'Community | Inoya Rouge',
@@ -13,7 +12,7 @@ export const metadata: Metadata = {
 }
 
 export default async function CommunityPage() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('testimonials')
     .select('id, author_name, title, content, created_at')

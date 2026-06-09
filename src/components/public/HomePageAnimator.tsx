@@ -76,6 +76,16 @@ export default function HomePageAnimator() {
         ease: 'power3.out',
       })
     })
+
+    // Recompute ScrollTrigger start positions after layout + scroll settle.
+    // On client navigation the Suspense-streamed sections and the Lenis scroll
+    // reset land AFTER this hook runs, leaving trigger positions stale — which
+    // makes reveals fire late/janky on back-navigation. Double rAF waits for paint.
+    const raf = requestAnimationFrame(() =>
+      requestAnimationFrame(() => ScrollTrigger.refresh())
+    )
+
+    return () => cancelAnimationFrame(raf)
   })
 
   return null

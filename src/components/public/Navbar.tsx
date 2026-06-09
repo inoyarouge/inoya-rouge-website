@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import MobileNav from './MobileNav'
+import AnchorLink from './AnchorLink'
 
 const navLinks = [
   { href: '/', label: 'HOME' },
@@ -13,7 +14,20 @@ const navLinks = [
       { name: 'LIPS', image: '/images/categories/lips.jpeg', href: '/shop/lips' },
     ],
   },
-  { href: '/about-us', label: 'ABOUT US' },
+  {
+    href: '/about-us',
+    label: 'ABOUT US',
+    textDropdown: [
+      { name: 'Our Promise', href: '/about-us#clean-beauty-promise' },
+      { name: 'Our Products', href: '/about-us#our-products' },
+      { name: 'Our Ingredients', href: '/about-us#our-ingredients' },
+      { name: 'Why Us', href: '/about-us#what-makes-us-different' },
+      { name: 'The Meaning', href: '/about-us#the-meaning' },
+      { name: 'Our Story', href: '/about-us#our-story' },
+      { name: 'Our Mission', href: '/about-us#our-mission' },
+      { name: 'Our Team', href: '/our-team' },
+    ],
+  },
   { href: '/community', label: 'COMMUNITY' },
   { href: '/contact', label: 'CONTACT' },
 ]
@@ -36,13 +50,36 @@ export default function Navbar() {
             />
           </Link>
           {navLinks.map((link) => (
-            <div key={link.href} className="group/navitem h-full flex items-center">
+            <div key={link.href} className={`group/navitem h-full flex items-center${link.textDropdown ? ' relative' : ''}`}>
               <Link
                 href={link.href}
                 className="nav-underline-link text-[#211a17] hover:text-burgundy text-[10px] md:text-[14px] font-sans uppercase tracking-[0.0em] py-1 flex items-center transition-colors"
               >
                 {link.label}
               </Link>
+
+              {link.textDropdown && (
+                <div className="absolute top-full left-0 min-w-[220px] bg-cream/95 backdrop-blur-md shadow-sm border-t border-black/5
+                  opacity-0 invisible group-hover/navitem:opacity-100 group-hover/navitem:visible transition-all duration-300 transform -translate-y-1 group-hover/navitem:translate-y-0 rounded-b-sm">
+                  <div className="py-4 flex flex-col gap-1.5">
+                    {link.textDropdown.map((item) => (
+                      <AnchorLink
+                        key={item.name}
+                        href={item.href}
+                        className="group/sublink flex items-center justify-between px-6 py-1.5 font-sans text-[11px] uppercase tracking-widest text-[#211a17]/60 hover:text-[#211a17] transition-colors duration-300"
+                      >
+                        <span className="relative">
+                          {item.name}
+                          <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#211a17]/40 group-hover/sublink:w-full transition-all duration-300 ease-out"></span>
+                        </span>
+                        <svg className="w-[10px] h-[10px] opacity-0 -translate-x-2 group-hover/sublink:opacity-100 group-hover/sublink:translate-x-0 transition-all duration-300 ease-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </AnchorLink>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {link.dropdown && (
                 <div className="hidden md:block absolute top-full left-0 w-full bg-[#fff8f6] shadow-xl border-t border-black/5

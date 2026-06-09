@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import CuratedCollectionCarousel from '@/components/public/CuratedCollectionCarousel'
 import TrustTicker from '@/components/public/TrustTicker'
 import CommunityStoryForm from '@/components/public/CommunityStoryForm'
@@ -33,7 +33,7 @@ function SkeletonGrid() {
 // --- Async data components ---
 
 async function CuratedCollection() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('products')
     .select('*, product_variants(*, discounts(*), variant_images(*)), discounts(*)')
@@ -309,7 +309,7 @@ export default function HomePage() {
           <div className="scroll-stagger-group grid grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-4 md:gap-6 h-auto md:h-[600px] lg:h-[700px]">
             {/* Lips - Left Feature */}
             <Link
-              href="/shop?category=Lips"
+              href="/shop/lips"
               className="scroll-stagger-item relative overflow-hidden rounded-[2rem] group h-[400px] md:h-full w-full"
             >
               <Image
@@ -341,7 +341,7 @@ export default function HomePage() {
             <div className="flex flex-col gap-4 md:gap-6 h-[600px] md:h-full w-full">
               {/* Eyes - Top Right */}
               <Link
-                href="/shop?category=Eyes"
+                href="/shop/eyes"
                 className="scroll-stagger-item relative flex-1 overflow-hidden rounded-[2rem] group w-full"
               >
                 <Image
@@ -371,7 +371,7 @@ export default function HomePage() {
 
               {/* Face - Bottom Right */}
               <Link
-                href="/shop?category=Face"
+                href="/shop/face"
                 className="scroll-stagger-item relative flex-1 overflow-hidden rounded-[2rem] group w-full"
               >
                 <Image

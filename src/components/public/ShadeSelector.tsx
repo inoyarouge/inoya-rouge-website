@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo, useEffect, ReactNode } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import type { Product, ProductVariant, Promotion, Offer } from '@/lib/types'
 import { computePriceFromOffers, formatINR, getAvailableOffers } from '@/lib/pricing'
 import BuyNowModal from './BuyNowModal'
 import OffersPanel from './OffersPanel'
+import ProductAccordion from './ProductAccordion'
 import { ChevronDown } from 'lucide-react'
 import { supabaseImageUrl } from '@/lib/supabase/imageUrl'
 
@@ -13,15 +14,17 @@ interface ShadeSelectorProps {
   variants: ProductVariant[]
   product: Product
   promotions?: Promotion[]
-  children?: ReactNode
 }
 
-export default function ShadeSelector({ variants, product, promotions = [], children }: ShadeSelectorProps) {
+export default function ShadeSelector({ variants, product, promotions = [] }: ShadeSelectorProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false)
   const [isOffersOpen, setIsOffersOpen] = useState(false)
+  const [isDescExpanded, setIsDescExpanded] = useState(false)
+  const [descOverflows, setDescOverflows] = useState(false)
+  const descRef = useRef<HTMLParagraphElement>(null)
   const [appliedOfferIds, setAppliedOfferIds] = useState<string[]>(() =>
     getAvailableOffers(product, variants[0], promotions)
       .filter((o) => o.source === 'product' || o.source === 'variant')
@@ -29,6 +32,29 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
   )
 
   const selectedVariant = variants[selectedIndex] ?? variants[0]
+
+  // Short description resolves per shade: use the shade's override if set,
+  // otherwise fall back to the product-level value.
+  const resolvedDescription =
+    selectedVariant?.description ||
+    product.description ||
+    null
+
+  // Accordion content also resolves per shade with product fallback, recomputed
+  // whenever the selected shade changes. Empty sections are filtered out.
+  const accordionItems = useMemo(
+    () =>
+      [
+        { title: 'What Am I?', content: selectedVariant?.about_product || product.about_product },
+        { title: 'Why Am I irresistible?', content: selectedVariant?.what_makes_unique || product.what_makes_unique },
+        { title: 'Use Me Now and U will never look back', content: selectedVariant?.how_to_use || product.how_to_use },
+        { title: 'You will love my ingredients', content: selectedVariant?.ingredients || product.ingredients },
+        { title: 'Something Extra', content: selectedVariant?.additional_info || product.additional_info },
+      ].filter(
+        (item): item is { title: string; content: string } => !!item.content,
+      ),
+    [selectedVariant, product],
+  )
 
   // The per-variant gallery. Fall back to the single `image_url` for legacy variants.
   const galleryImages = useMemo(() => {
@@ -40,10 +66,18 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
     return [] as { id: string; url: string }[]
   }, [selectedVariant])
 
-  // Reset the image index when the user switches to a different shade.
+  // Reset the image index and description expansion when the user switches to a different shade.
   useEffect(() => {
     setSelectedImageIndex(0)
+    setIsDescExpanded(false)
   }, [selectedIndex])
+
+  // Detect whether the clamped paragraph actually overflows (2 lines).
+  useEffect(() => {
+    const el = descRef.current
+    if (!el) return
+    setDescOverflows(el.scrollHeight > el.clientHeight)
+  }, [resolvedDescription])
 
   const offers: Offer[] = useMemo(
     () => getAvailableOffers(product, selectedVariant, promotions),
@@ -93,7 +127,7 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
   return (
     <div className="bg-cream min-h-[calc(100vh-80px)] md:py-16 py-8">
       <div className="max-w-[1200px] mx-auto px-4">
-        <div className="flex flex-col md:flex-row gap-8 md:gap-16 items-stretch">
+        <div className="flex flex-col md:flex-row gap-8 md:gap-16 items-start">
 
           {/* Left Column: Images + Accordion */}
           <div className="w-full md:w-[55%] flex flex-col gap-8 md:gap-12">
@@ -148,9 +182,9 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
             </div>
 
             {/* Desktop Accordion Region */}
-            {children && (
+            {accordionItems.length > 0 && (
               <div className="w-full mt-4 hidden md:block">
-                {children}
+                <ProductAccordion items={accordionItems} />
               </div>
             )}
           </div>
@@ -161,9 +195,26 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
               {product.name}
             </h1>
 
-            <div className="text-gray-700 text-[15px] leading-relaxed mb-6">
-              {product.description || product.tagline || 'Experience the highly pigmented, long-lasting formula that delivers a smooth, flawless finish.'}
-            </div>
+            {resolvedDescription && (
+              <div className="mb-6">
+                <p
+                  ref={descRef}
+                  className="text-gray-700 text-[15px] leading-relaxed whitespace-pre-line"
+                  style={!isDescExpanded ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : undefined}
+                >
+                  {resolvedDescription}
+                </p>
+                {(descOverflows || isDescExpanded) && (
+                  <button
+                    type="button"
+                    onClick={() => setIsDescExpanded((v) => !v)}
+                    className="mt-1 text-burgundy underline underline-offset-2 text-[13px] hover:opacity-70 transition-opacity"
+                  >
+                    {isDescExpanded ? 'Read less' : 'Read more'}
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Price */}
             <div className="mb-6">
@@ -278,9 +329,9 @@ export default function ShadeSelector({ variants, product, promotions = [], chil
         </div>
 
         {/* Mobile Accordion Region */}
-        {children && (
+        {accordionItems.length > 0 && (
           <div className="w-full mt-12 md:hidden">
-            {children}
+            <ProductAccordion items={accordionItems} />
           </div>
         )}
       </div>

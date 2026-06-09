@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import MobileMenuToggle from './MobileMenuToggle'
+import AnchorLink from './AnchorLink'
 
 type DropdownItem = { name: string; image: string; href: string }
-type NavLink = { href: string; label: string; dropdown?: DropdownItem[] }
+type TextDropdownItem = { name: string; href: string }
+type NavLink = { href: string; label: string; dropdown?: DropdownItem[]; textDropdown?: TextDropdownItem[] }
 
 export default function MobileNav({ navLinks }: { navLinks: NavLink[] }) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
@@ -15,7 +17,7 @@ export default function MobileNav({ navLinks }: { navLinks: NavLink[] }) {
       <div className="flex flex-col gap-6 mt-4 pb-12 w-full">
         {navLinks.map((link) => (
           <div key={link.href} className="flex flex-col">
-            {link.dropdown ? (
+            {link.dropdown || link.textDropdown ? (
               <>
                 <div className="flex items-center justify-between w-full border-b border-black/5">
                   <Link
@@ -38,13 +40,19 @@ export default function MobileNav({ navLinks }: { navLinks: NavLink[] }) {
                     </svg>
                   </button>
                 </div>
-                <div className={`overflow-hidden transition-all duration-300 ${openDropdown === link.label ? 'max-h-64 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
+                <div className={`overflow-hidden transition-all duration-300 ${openDropdown === link.label ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
                   <div className="flex flex-col gap-4 pl-4 border-l border-black/10">
-                    {link.dropdown.map((item) => (
+                    {link.dropdown?.map((item) => (
                       <Link key={item.name} href={item.href} className="text-[#211a17]/80 text-[16px] font-sans uppercase tracking-widest py-1 flex items-center gap-3">
                         <span className="w-1.5 h-1.5 rounded-full bg-burgundy/40"></span>
                         {item.name}
                       </Link>
+                    ))}
+                    {link.textDropdown?.map((item) => (
+                      <AnchorLink key={item.name} href={item.href} className="text-[#211a17]/80 text-[16px] font-sans uppercase tracking-widest py-1 flex items-center gap-3">
+                        <span className="w-1.5 h-1.5 rounded-full bg-burgundy/40"></span>
+                        {item.name}
+                      </AnchorLink>
                     ))}
                   </div>
                 </div>

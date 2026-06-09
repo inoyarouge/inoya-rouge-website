@@ -1,3 +1,158 @@
+## 2026-06-09 — Fix: prices now display exactly as saved (no padding, no rounding)
+
+**Status:** DONE
+
+`formatINR` forced `minimumFractionDigits: 2` (padding ₹999 → ₹999.00) and capped at
+`maximumFractionDigits: 2` (would round >2-decimal values on display). Set
+`minimumFractionDigits: 0` + `maximumFractionDigits: 20` so the storefront shows the stored
+amount verbatim: ₹999, ₹999.01, ₹999.99 — thousands separator preserved (₹1,299). Display-only;
+`base_price` is exact `numeric`. Single central formatter, so it covers ProductCard / PDP /
+ShadeSelector / BuyNowModal / DiscountSection.
+- [src/lib/pricing.ts](src/lib/pricing.ts) — `formatINR`
+
+## 2026-06-09 — Fix: admin number inputs silently changed value on mouse-wheel scroll
+
+**Status:** DONE
+
+Client entered Base Price `999` but the product ("Velvet Lumierè") listed at `998.96`.
+Ruled out display/rounding and discounts: the DB stores `base_price = 998.96` exactly
+(`numeric` column), there are no discounts or variant price overrides, and the save path
+(`parseFloat`) is clean — so the wrong value was already in the form state at submit time.
+
+Root cause: `<input type="number" step="0.01">` decrements by `step` per mouse-wheel tick
+when focused. `999 − 998.96 = 0.04 = 4 × 0.01` — four accidental wheel-downs while scrolling
+the long admin form. Classic HTML number-input footgun.
+
+**Changes:** added `onWheel={(e) => e.currentTarget.blur()}` to every `type="number"` input
+in the admin forms so a wheel event drops focus (page scrolls) instead of stepping the value.
+Typing and spinner arrows still work; native min/max/step validation preserved.
+- [ProductForm.tsx](src/components/admin/ProductForm.tsx) — Base Price
+- [VariantForm.tsx](src/components/admin/VariantForm.tsx) — Price Override + Sort Order
+- [DiscountSection.tsx](src/components/admin/DiscountSection.tsx) — Discount value
+
+Data correction owner-handled: client will re-save Velvet Lumierè with 999. No SQL run.
+
+Next: client re-saves the affected product; verify wheel no longer changes any number field.
+
+## 2026-06-06 — Fix: same-page dropdown anchor links required a double-click
+
+**Status:** DONE
+
+On the About Us page, clicking an About Us / Elements dropdown item that points to a section of
+the *same* page landed the user at the top instead of the section (single click); only a
+double-click worked. Cross-page anchor clicks were fine. Two compounding causes:
+1. `AnchorLink` used native `scrollIntoView()` while Lenis runs its own RAF loop with a separate
+   target, so Lenis overrode the scroll on the next frame.
+2. **Main cause** (Next 15): `AnchorLink` calls `window.history.replaceState()` to update the URL
+   hash. In Next 15 that is router-integrated, so `useSearchParams()` returns a fresh reference and
+   re-fires the `[pathname, searchParams]` effect in `SmoothScrollProvider`, which did
+   `lenis.scrollTo(0, { immediate: true })` — snapping the just-started anchor scroll back to top.
+   (Double-click "worked" because the 2nd click didn't change history, so no reset fired.)
+
+**Changes:**
+- New [src/lib/lenis.ts](src/lib/lenis.ts): module singleton (`getLenis`/`setLenis`) exposing the
+  live Lenis instance.
+- [SmoothScrollProvider.tsx](src/components/providers/SmoothScrollProvider.tsx): register the
+  instance on init, clear it on cleanup; **guard the scroll-to-top reset with a `prevPathname` ref
+  so it only fires on a real page change, not on same-page hash/searchParams updates.**
+- [AnchorLink.tsx](src/components/public/AnchorLink.tsx): same-page anchors now scroll via
+  `lenis.scrollTo(el, { offset: -80 })` (offset matches sections' `scroll-mt-20`), with native
+  `scrollIntoView` as fallback before Lenis inits.
+
+Next: verify single-click section nav on /about-us (desktop dropdown + mobile menu) and regression
+-check cross-page anchors still work.
+
+## 2026-06-05 — Performance: make public pages cacheable + cut DB latency + lighten JS
+
+**Status:** IN PROGRESS
+
+Whole site felt slow (target: sub-1s). Diagnosis found a stack of compounding causes, the
+biggest being that **no public page was actually being cached** despite `export const revalidate`
+on each: every public read went through `createClient()` (which calls `cookies()`) and most pages
+also rendered `PromotionBannerResolver` (which calls `noStore()`) — both are dynamic APIs that
+silently force per-request rendering, so every visit hit the Supabase DB live. The DB is in Tokyo
+(`ap-northeast-1`) while Vercel defaults to US-East, so each uncached request crossed the Pacific.
+
+**Changes (this pass):**
+- New [src/lib/supabase/public.ts](src/lib/supabase/public.ts): cookieless anon read client
+  (`createPublicClient`) for public catalog reads — does NOT touch cookies, so routes stay
+  static/ISR. RLS is unchanged (still anon role). Use the cookie-based `server.ts` client only for
+  auth/mutations (admin, Server Actions).
+- Swapped public read pages/components from `createClient()` → `createPublicClient()`:
+  homepage `CuratedCollection`, `/shop`, `/shop/{lips,eyes,face}`, `/shop/[slug]` (incl.
+  `RelatedProducts` + `generateStaticParams`), `/community`, `PromotionBannerResolver`,
+  `TestimonialList`.
+- [PromotionBannerResolver.tsx](src/components/public/PromotionBannerResolver.tsx): removed
+  `noStore()` so it participates in ISR. Tradeoff: the promo banner now refreshes on each host
+  page's revalidate interval instead of instantly (acceptable for perf).
+- [shop/[slug]/page.tsx](src/app/(public)/shop/[slug]/page.tsx): dropped `force-dynamic` /
+  `revalidate = 0` → `revalidate = 300` + `generateStaticParams()` (pre-build known slugs).
+- [community/page.tsx](src/app/(public)/community/page.tsx): dropped `force-dynamic` /
+  `revalidate = 0` → `revalidate = 300`.
+- New `vercel.json`: pin serverless/ISR functions to `hnd1` (Tokyo) to sit next to the DB.
+- [next.config.js](next.config.js): added `experimental.optimizePackageImports` for
+  `lucide-react`, `framer-motion`, `gsap` to trim barrel imports.
+- [SmoothScrollProvider.tsx](src/components/providers/SmoothScrollProvider.tsx): defer Lenis/GSAP
+  init behind `requestIdleCallback` (setTimeout fallback) so smooth scroll starts after the page is
+  interactive instead of competing with first paint. No visual change.
+
+**Deliberately NOT done (documented):**
+- Server-side category filtering on `/shop/{lips,eyes,face}` — ShopClient lets users switch
+  categories client-side, so filtering server-side would break in-page switching. Left as-is.
+- Nested `select('*')` → explicit columns — catalog is tiny right now, so the payload gain is
+  negligible vs. the correctness risk. Revisit if catalog grows.
+- Source image compression (200–250KB files) — needs manual re-export; flagged as follow-up.
+
+**Verification:** `npx tsc --noEmit` clean; `npm run build` shows public routes as ISR/static (○/●,
+not ƒ); compare load times on a production build (`npm start`) before/after — dev mode is not a
+valid measurement.
+
+---
+
+## 2026-06-04 — Feature: per-shade descriptions with product-level defaults
+
+**Status:** IN PROGRESS
+
+Descriptions were product-level only (6 fields: `description`, `about_product`, `what_makes_unique`, `how_to_use`, `ingredients`, `additional_info`), so the PDP text never changed when a shopper picked a different shade. Moving to a **shared-default + per-shade-override** model: the product-level fields remain as the default applied to every shade; each shade (`product_variants`) gets its own optional copy of the same 6 fields. Resolution everywhere on the PDP: `variant.field` if non-empty, else `product.field`. No data migration (no live products yet).
+
+**Changes:**
+- DB: add 6 nullable text columns to `product_variants` (`description`, `about_product`, `what_makes_unique`, `how_to_use`, `ingredients`, `additional_info`) via Supabase migration.
+- [types.ts](src/lib/types.ts): add the 6 fields to `ProductVariant`.
+- [VariantForm.tsx](src/components/admin/VariantForm.tsx): new "Shade-specific descriptions (optional)" section with 6 textareas; blank = inherit product value.
+- [products/actions.ts](src/app/admin/(protected)/products/actions.ts): persist the 6 fields in `createVariant`/`updateVariant`.
+- [ShadeSelector.tsx](src/components/public/ShadeSelector.tsx): short description + accordion now resolve per selected shade with product fallback; accordion built inside the client component (was passed as `children` from the server page).
+- [shop/[slug]/page.tsx](src/app/(public)/shop/[slug]/page.tsx): drop server-side accordion construction / `children`.
+
+**Files touched:** `src/lib/types.ts`, `src/components/admin/VariantForm.tsx`, `src/app/admin/(protected)/products/actions.ts`, `src/components/public/ShadeSelector.tsx`, `src/app/(public)/shop/[slug]/page.tsx`, plus Supabase `product_variants` schema.
+
+**Verification:** `npx tsc --noEmit` clean; admin round-trip (leave one shade blank, override another) → PDP swaps description + accordion on shade change with product fallback.
+
+---
+
+## 2026-06-04 — Fix: homepage scroll animations re-trigger with a lag on back-navigation
+
+**Status:** DONE
+
+When navigating away from the homepage and back, the GSAP scroll-reveal animations replayed **with a noticeable delay** — reveal sections stayed invisible or fired late/at the wrong scroll point. Only the homepage was affected.
+
+**Root cause:** [HomePageAnimator.tsx](src/components/public/HomePageAnimator.tsx) builds all ScrollTrigger start positions at mount, but on client navigation the layout/scroll is still settling — the homepage streams sections via `<Suspense>` and [SmoothScrollProvider.tsx](src/components/providers/SmoothScrollProvider.tsx) resets Lenis scroll to top on route change. Nothing ever called `ScrollTrigger.refresh()` afterward, so cached trigger positions were stale (and computed against the *previous* page's scroll, since the deep child effect runs before the higher provider effect). `useGSAP` already auto-cleans up via `gsap.context()`, so duplicate-stacking was NOT the cause. Other pages use only simple ref `gsap.from` (no ScrollTrigger), hence unaffected.
+
+**Fix (replay behavior intentionally kept — only the lag removed):**
+- [HomePageAnimator.tsx](src/components/public/HomePageAnimator.tsx): after the animation setup inside `useGSAP`, schedule a double-`requestAnimationFrame` → `ScrollTrigger.refresh()` so positions recompute after streamed content + scroll settle; return cleanup that cancels the pending frame.
+- [SmoothScrollProvider.tsx](src/components/providers/SmoothScrollProvider.tsx): in the route-change effect (runs last in the tree), call `ScrollTrigger.refresh()` right after `lenis.scrollTo(0, { immediate: true })`.
+
+No animation timing/values changed (hero `delay: 0.2` and staggers preserved).
+
+**Files touched:**
+- `src/components/public/HomePageAnimator.tsx`
+- `src/components/providers/SmoothScrollProvider.tsx`
+
+**Verification:**
+- `npx tsc --noEmit` — expect clean.
+- Manual: Home → Shop → back to Home, scroll down → reveals fire at the right point with no lag, every round-trip; also Home → /policies (non-smooth-scroll, remounts Lenis) → Home.
+
+---
+
 ## 2026-05-03 — Fix: promotion banner overlapping navbar
 
 **Status:** DONE (typecheck clean)

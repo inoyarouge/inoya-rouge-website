@@ -96,6 +96,7 @@ export default function DiscountSection({
               max={type === 'percent' ? 100 : undefined}
               value={value}
               onChange={(e) => setValue(e.target.value)}
+              onWheel={(e) => e.currentTarget.blur()}
               disabled={disabled}
               placeholder={type === 'percent' ? 'e.g. 20' : 'e.g. 200'}
               className={fieldCls}

@@ -29,13 +29,15 @@ export default function ProductAccordion({ items }: { items: AccordionItem[] }) 
             </span>
           </button>
           <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              openIndex === i ? 'max-h-96 pb-5' : 'max-h-0'
+            className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+              openIndex === i ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
             }`}
           >
-            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-              {item.content}
-            </p>
+            <div className="overflow-hidden">
+              <p className={`text-sm text-gray-600 leading-relaxed whitespace-pre-line ${openIndex === i ? 'pb-5' : ''}`}>
+                {item.content}
+              </p>
+            </div>
           </div>
         </div>
       ))}

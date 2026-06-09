@@ -1,8 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import type { Testimonial } from '@/lib/types'
 
 export default async function TestimonialList() {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const { data } = await supabase
         .from('testimonials')
         .select('*')

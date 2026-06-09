@@ -4,7 +4,6 @@ import PromotionBannerResolver from '@/components/public/PromotionBannerResolver
 import AnchorScroller from '@/components/public/AnchorScroller'
 import OurStoryBanner from './OurStoryBanner'
 import ScrollRevealText from '@/components/public/ScrollRevealText'
-import TeamSection from './TeamSection'
 
 export const revalidate = false
 
@@ -281,150 +280,158 @@ export default function OurStoryPage() {
       </div>
 
       {/* Our Products — text L / image R */}
-      <Row
-        imageRight
-        imageAlt="Inoya Rouge product collection"
-        heading={<Eyebrow>Our Products</Eyebrow>}
-        src="/images/about us/our products.jpeg"
-        mobileSrc="/images/mobile images/our products mobile.jpeg"
-      >
-        <ul className="space-y-5 md:space-y-6">
-          {productPillars.map(({ icon, label }) => (
-            <li key={label} className="flex items-center gap-4 md:gap-5">
-              <div className="relative w-9 h-9 md:w-10 md:h-10 shrink-0">
-                <Image src={icon} alt="" fill className="object-contain" />
-              </div>
-              <span className="font-sans text-base md:text-lg text-black leading-relaxed">
-                {label}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </Row>
+      <div id="our-products" className="scroll-mt-20">
+        <Row
+          imageRight
+          imageAlt="Inoya Rouge product collection"
+          heading={<Eyebrow>Our Products</Eyebrow>}
+          src="/images/about us/our products.jpeg"
+          mobileSrc="/images/mobile images/our products mobile.jpeg"
+        >
+          <ul className="space-y-5 md:space-y-6">
+            {productPillars.map(({ icon, label }) => (
+              <li key={label} className="flex items-center gap-4 md:gap-5">
+                <div className="relative w-9 h-9 md:w-10 md:h-10 shrink-0">
+                  <Image src={icon} alt="" fill className="object-contain" />
+                </div>
+                <span className="font-sans text-base md:text-lg text-black leading-relaxed">
+                  {label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Row>
+      </div>
 
       {/* Our Ingredients — row 1: image L / text R */}
-      <Row
-        imageAlt="Indian botanicals and essential oils"
-        heading={<Eyebrow>Our Ingredients</Eyebrow>}
-        src="/images/about us/ingredients 1.jpeg"
-        mobileSrc="/images/mobile images/ingredients 1 mobile.jpeg"
-      >
-        <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
-          <p className="font-medium">A Tribute to Indian Excellence</p>
-          <p>
-            There&apos;s something timeless about the way beauty has always been nurtured in
-            India—through simple rituals, trusted ingredients, and a deep connection to nature.
-          </p>
-          <p>
-            At Inoya Rouge, we carry that feeling forward, bringing together the essence of Indian
-            oils and nourishing botanicals in everything we create.
-          </p>
-          <p>
-            Guided by nature and refined through modern cosmetic science, our creations are
-            meticulously
-          </p>
-        </div>
-      </Row>
+      <div id="our-ingredients" className="scroll-mt-20">
+        <Row
+          imageAlt="Indian botanicals and essential oils"
+          heading={<Eyebrow>Our Ingredients</Eyebrow>}
+          src="/images/about us/ingredients 1.jpeg"
+          mobileSrc="/images/mobile images/ingredients 1 mobile.jpeg"
+        >
+          <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
+            <p className="font-medium">A Tribute to Indian Excellence</p>
+            <p>
+              There&apos;s something timeless about the way beauty has always been nurtured in
+              India—through simple rituals, trusted ingredients, and a deep connection to nature.
+            </p>
+            <p>
+              At Inoya Rouge, we carry that feeling forward, bringing together the essence of Indian
+              oils and nourishing botanicals in everything we create.
+            </p>
+            <p>
+              Guided by nature and refined through modern cosmetic science, our creations are
+              meticulously
+            </p>
+          </div>
+        </Row>
 
-      {/* Our Ingredients — row 2: text L / image R */}
-      <Row
-        imageRight
-        imageAlt="Inoya Rouge ingredient detail"
-        src="/images/about us/ingredients 2.jpeg"
-        mobileSrc="/images/mobile images/ingredients 2 mobile.jpeg"
-      >
-        <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
-          <p>
-            crafted to deliver a sensorial experience that is lightweight, hydrating, and
-            effortlessly comfortable.
-          </p>
-          <p>
-            From replenishing oils that cocoon the lips in moisture to finely curated pigments
-            that complement Indian skin tones, each ingredient is chosen with intention—striking a
-            harmonious balance between performance, care, and sophistication.
-          </p>
-          <p>
-            Because to us, beauty should feel real. It should feel easy. And most importantly, it
-            should feel like you.
-          </p>
-          <p>The result is beauty reimagined—authentic, indulgent, and unmistakably Indian.</p>
-        </div>
-      </Row>
+        {/* Our Ingredients — row 2: text L / image R */}
+        <Row
+          imageRight
+          imageAlt="Inoya Rouge ingredient detail"
+          src="/images/about us/ingredients 2.jpeg"
+          mobileSrc="/images/mobile images/ingredients 2 mobile.jpeg"
+        >
+          <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
+            <p>
+              crafted to deliver a sensorial experience that is lightweight, hydrating, and
+              effortlessly comfortable.
+            </p>
+            <p>
+              From replenishing oils that cocoon the lips in moisture to finely curated pigments
+              that complement Indian skin tones, each ingredient is chosen with intention—striking a
+              harmonious balance between performance, care, and sophistication.
+            </p>
+            <p>
+              Because to us, beauty should feel real. It should feel easy. And most importantly, it
+              should feel like you.
+            </p>
+            <p>The result is beauty reimagined—authentic, indulgent, and unmistakably Indian.</p>
+          </div>
+        </Row>
+      </div>
 
       {/* What Makes Us Different — row 1: image L / text R */}
-      <Row
-        imageAlt="What makes Inoya Rouge different"
-        heading={<Eyebrow>What Makes Us Different</Eyebrow>}
-        src="/images/about us/difference 1.jpeg"
-        mobileSrc="/images/mobile images/difference 1 mobile.jpeg"
-      >
-        <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
-          <p>
-            At Inoya Rouge, we believe beauty should be more than just colour—it should be a
-            thoughtful blend of care, creativity, and confidence.
-          </p>
-          <p>
-            <span className="block font-medium">Precision Meets Passion</span>
-            Founded by professionals from the world of finance and corporate advisory, our brand
-            combines structured precision with creative expression, ensuring that every product is
-            thoughtfully developed and carefully crafted.
-          </p>
-          <p>
-            <span className="block font-medium">Skin-Friendly Formulations</span>
-            Our cosmetics are designed to enhance beauty while remaining gentle on the skin. We
-            focus on comfortable textures, nourishing ingredients, and formulas suitable for
-            everyday wear.
-          </p>
-        </div>
-      </Row>
+      <div id="what-makes-us-different" className="scroll-mt-20">
+        <Row
+          imageAlt="What makes Inoya Rouge different"
+          heading={<Eyebrow>What Makes Us Different</Eyebrow>}
+          src="/images/about us/difference 1.jpeg"
+          mobileSrc="/images/mobile images/difference 1 mobile.jpeg"
+        >
+          <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
+            <p>
+              At Inoya Rouge, we believe beauty should be more than just colour—it should be a
+              thoughtful blend of care, creativity, and confidence.
+            </p>
+            <p>
+              <span className="block font-medium">Precision Meets Passion</span>
+              Founded by professionals from the world of finance and corporate advisory, our brand
+              combines structured precision with creative expression, ensuring that every product is
+              thoughtfully developed and carefully crafted.
+            </p>
+            <p>
+              <span className="block font-medium">Skin-Friendly Formulations</span>
+              Our cosmetics are designed to enhance beauty while remaining gentle on the skin. We
+              focus on comfortable textures, nourishing ingredients, and formulas suitable for
+              everyday wear.
+            </p>
+          </div>
+        </Row>
 
-      {/* What Makes Us Different — row 2: text L / image R */}
-      <Row
-        imageRight
-        imageAlt="Indian beauty traditions"
-        src="/images/about us/difference 2.jpeg"
-        mobileSrc="/images/mobile images/difference 2 mobile.jpeg"
-      >
-        <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
-          <p>
-            <span className="block font-medium">Inspired by Indian Beauty Traditions</span>
-            India&apos;s heritage of natural beauty rituals inspires our formulations. Ingredients
-            such as Indian essential oils reflect our commitment to combining tradition with modern
-            cosmetic science.
-          </p>
-          <p>
-            <span className="block font-medium">Made for Indian Skin Tones</span>
-            We celebrate the diversity of Indian beauty by creating shades that complement a wide
-            range of skin tones, ensuring everyone can find their perfect colour.
-          </p>
-        </div>
-      </Row>
+        {/* What Makes Us Different — row 2: text L / image R */}
+        <Row
+          imageRight
+          imageAlt="Indian beauty traditions"
+          src="/images/about us/difference 2.jpeg"
+          mobileSrc="/images/mobile images/difference 2 mobile.jpeg"
+        >
+          <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
+            <p>
+              <span className="block font-medium">Inspired by Indian Beauty Traditions</span>
+              India&apos;s heritage of natural beauty rituals inspires our formulations. Ingredients
+              such as Indian essential oils reflect our commitment to combining tradition with modern
+              cosmetic science.
+            </p>
+            <p>
+              <span className="block font-medium">Made for Indian Skin Tones</span>
+              We celebrate the diversity of Indian beauty by creating shades that complement a wide
+              range of skin tones, ensuring everyone can find their perfect colour.
+            </p>
+          </div>
+        </Row>
+      </div>
 
       {/* The Meaning Behind Inoya Rouge — image L / text R */}
-      <Row
-        imageAlt="The meaning behind Inoya Rouge"
-        heading={<Eyebrow>The Meaning Behind Inoya Rouge</Eyebrow>}
-        src="/images/about us/meaning 1.jpeg"
-        mobileSrc="/images/mobile images/meaning 1 mobile.jpeg"
-      >
-        <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
-          <p>The name Inoya Rouge reflects the essence of the brand.</p>
-          <p>
-            <span className="font-medium">&ldquo;Inoya&rdquo;</span> represents purity, radiance,
-            and natural beauty — an idea inspired by the harmony between nature and
-            self-expression.
-          </p>
-          <p>
-            <span className="font-medium">&ldquo;Rouge&rdquo;</span> symbolises colour, confidence,
-            and timeless elegance.
-          </p>
-          <p>
-            Together, Inoya Rouge stands for beauty that is vibrant yet gentle, modern yet rooted
-            in nature. It is a name that celebrates individuality while embracing the richness of
-            colour.
-          </p>
-        </div>
-      </Row>
+      <div id="the-meaning" className="scroll-mt-20">
+        <Row
+          imageAlt="The meaning behind Inoya Rouge"
+          heading={<Eyebrow>The Meaning Behind Inoya Rouge</Eyebrow>}
+          src="/images/about us/meaning 1.jpeg"
+          mobileSrc="/images/mobile images/meaning 1 mobile.jpeg"
+        >
+          <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
+            <p>The name Inoya Rouge reflects the essence of the brand.</p>
+            <p>
+              <span className="font-medium">&ldquo;Inoya&rdquo;</span> represents purity, radiance,
+              and natural beauty — an idea inspired by the harmony between nature and
+              self-expression.
+            </p>
+            <p>
+              <span className="font-medium">&ldquo;Rouge&rdquo;</span> symbolises colour, confidence,
+              and timeless elegance.
+            </p>
+            <p>
+              Together, Inoya Rouge stands for beauty that is vibrant yet gentle, modern yet rooted
+              in nature. It is a name that celebrates individuality while embracing the richness of
+              colour.
+            </p>
+          </div>
+        </Row>
+      </div>
 
       {/* About Us — 4 alternating rows */}
       <div id="our-story">
@@ -441,7 +448,7 @@ export default function OurStoryPage() {
               Inoya Rouge began as something beautifully unexpected—a quiet dream that stood in
               contrast to the structured paths we had chosen. Two Childhood Friends who were together
               since they were in pigtails, having similar ideologies, similar thoughts, always
-              wanting to challenging themselves, their worlds were defined by precision, numbers, and
+              wanting to challenge themselves, their worlds were defined by precision, numbers, and
               discipline.
             </p>
           </div>
@@ -476,7 +483,7 @@ export default function OurStoryPage() {
         <div className="font-sans text-base md:text-lg text-black space-y-4 leading-relaxed">
           <p>
             A Brand that blended nature&apos;s goodness with modern care and elegance—where beauty
-            didn&apos;t just enhanced, but nurtured.
+            isn&apos;t just enhanced, but nurtured.
           </p>
           <p>
             With the gentle strength and unwavering belief of a mother who always encouraged us to
@@ -558,15 +565,12 @@ export default function OurStoryPage() {
               seen, celebrated, and empowered to express herself in her own unique way.
             </p>
             <p className="font-accent italic text-burgundy text-xl md:text-2xl">
-              &ldquo;INOYA ROUGE — Born from friendship, strengthened by family, crafted with India,
-              made for every shade of you.&rdquo;
+              &ldquo;INOYA ROUGE — Born from friendship, strengthened by family, crafted & enriched with Indian elements, made for every shade of you.&rdquo;
             </p>
           </div>
         </Row>
       </div>
 
-      {/* Our Team Section */}
-      <TeamSection />
     </div>
   )
 }

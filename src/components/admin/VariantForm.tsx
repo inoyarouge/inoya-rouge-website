@@ -39,6 +39,14 @@ export default function VariantForm({
   const [isActive, setIsActive] = useState(variant?.is_active ?? true)
   const [sortOrder, setSortOrder] = useState(variant?.sort_order?.toString() ?? '0')
 
+  // Per-shade description overrides. Blank = inherit the product-level value.
+  const [description, setDescription] = useState(variant?.description ?? '')
+  const [aboutProduct, setAboutProduct] = useState(variant?.about_product ?? '')
+  const [whatMakesUnique, setWhatMakesUnique] = useState(variant?.what_makes_unique ?? '')
+  const [howToUse, setHowToUse] = useState(variant?.how_to_use ?? '')
+  const [ingredients, setIngredients] = useState(variant?.ingredients ?? '')
+  const [additionalInfo, setAdditionalInfo] = useState(variant?.additional_info ?? '')
+
   const existingDiscount = variant?.discount ?? null
   const [discountEnabled, setDiscountEnabled] = useState(Boolean(existingDiscount))
   const [discountType, setDiscountType] = useState<'percent' | 'flat'>(existingDiscount?.type ?? 'percent')
@@ -100,6 +108,12 @@ export default function VariantForm({
     formData.set('price_override', priceOverride)
     formData.set('is_active', isActive.toString())
     formData.set('sort_order', sortOrder)
+    formData.set('description', description)
+    formData.set('about_product', aboutProduct)
+    formData.set('what_makes_unique', whatMakesUnique)
+    formData.set('how_to_use', howToUse)
+    formData.set('ingredients', ingredients)
+    formData.set('additional_info', additionalInfo)
     formData.set('discount_enabled', discountEnabled ? '1' : '')
     formData.set('discount_type', discountType)
     formData.set('discount_value', discountValue)
@@ -228,6 +242,7 @@ export default function VariantForm({
             min="0"
             value={priceOverride}
             onChange={(e) => setPriceOverride(e.target.value)}
+            onWheel={(e) => e.currentTarget.blur()}
             placeholder="Leave empty for base price"
             className="mt-1.5 block w-full border border-gray-300 rounded-md px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#720B0B]/40 focus:border-[#720B0B] transition-shadow shadow-sm"
           />
@@ -239,6 +254,7 @@ export default function VariantForm({
             type="number"
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
+            onWheel={(e) => e.currentTarget.blur()}
             className="mt-1.5 block w-full border border-gray-300 rounded-md px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#720B0B]/40 focus:border-[#720B0B] transition-shadow shadow-sm"
           />
         </label>
@@ -252,6 +268,76 @@ export default function VariantForm({
           />
           <span className="text-sm font-medium text-gray-700">Active</span>
         </label>
+      </div>
+
+      {/* Shade-specific description overrides */}
+      <div className="border-t border-gray-100 pt-6 mt-2">
+        <h3 className="text-sm font-semibold text-gray-800 mb-1">Shade-specific descriptions (optional)</h3>
+        <p className="text-[11px] text-gray-500 mb-4">
+          Leave any field blank to use the product&apos;s description. Fill one in to override it for this shade only.
+        </p>
+
+        <div className="grid gap-5">
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">Description</span>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="mt-1.5 block w-full border border-gray-300 rounded-md px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#720B0B]/40 focus:border-[#720B0B] transition-shadow shadow-sm"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">What Am I?</span>
+            <textarea
+              value={aboutProduct}
+              onChange={(e) => setAboutProduct(e.target.value)}
+              rows={3}
+              className="mt-1.5 block w-full border border-gray-300 rounded-md px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#720B0B]/40 focus:border-[#720B0B] transition-shadow shadow-sm"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">Why Am I irresistible?</span>
+            <textarea
+              value={whatMakesUnique}
+              onChange={(e) => setWhatMakesUnique(e.target.value)}
+              rows={3}
+              className="mt-1.5 block w-full border border-gray-300 rounded-md px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#720B0B]/40 focus:border-[#720B0B] transition-shadow shadow-sm"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">Use Me Now and U will never look back</span>
+            <textarea
+              value={howToUse}
+              onChange={(e) => setHowToUse(e.target.value)}
+              rows={3}
+              className="mt-1.5 block w-full border border-gray-300 rounded-md px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#720B0B]/40 focus:border-[#720B0B] transition-shadow shadow-sm"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">You will love my ingredients</span>
+            <textarea
+              value={ingredients}
+              onChange={(e) => setIngredients(e.target.value)}
+              rows={3}
+              className="mt-1.5 block w-full border border-gray-300 rounded-md px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#720B0B]/40 focus:border-[#720B0B] transition-shadow shadow-sm"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-gray-700">Something Extra</span>
+            <textarea
+              value={additionalInfo}
+              onChange={(e) => setAdditionalInfo(e.target.value)}
+              rows={3}
+              className="mt-1.5 block w-full border border-gray-300 rounded-md px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#720B0B]/40 focus:border-[#720B0B] transition-shadow shadow-sm"
+            />
+          </label>
+        </div>
       </div>
 
       <DiscountSection

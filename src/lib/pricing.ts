@@ -67,7 +67,9 @@ export function computePriceStandalone(
 }
 
 export function formatINR(n: number): string {
-  return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  // Show exactly the stored amount: no padding zeros, no rounding.
+  // minFractionDigits 0 drops trailing ".00"; maxFractionDigits 20 keeps every decimal as saved.
+  return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 20 })}`
 }
 
 export function isPromotionLive(p: Promotion | null | undefined, now = new Date()): boolean {

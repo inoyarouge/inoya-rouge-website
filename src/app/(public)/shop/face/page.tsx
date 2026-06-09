@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import ShopClient from '@/components/public/ShopClient'
 import TrustBadges from '@/components/public/TrustBadges'
 import type { Product, ProductVariant, Collection, Discount, Promotion, VariantImage } from '@/lib/types'
@@ -37,7 +37,7 @@ function ShopSkeleton() {
 }
 
 async function ShopDataWrapper() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   const [productsRes, collectionsRes, promotionsRes] = await Promise.all([
     supabase

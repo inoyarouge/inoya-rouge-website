@@ -20,7 +20,6 @@ export default function ProductForm({
 
   const [error, setError] = useState<string | null>(null)
   const [name, setName] = useState(product?.name ?? '')
-  const [tagline, setTagline] = useState(product?.tagline ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
   const [basePrice, setBasePrice] = useState(product?.base_price?.toString() ?? '')
   const [category, setCategory] = useState<'Lips' | 'Eyes' | 'Face'>(product?.category ?? 'Lips')
@@ -47,7 +46,6 @@ export default function ProductForm({
 
     const formData = new FormData()
     formData.set('name', name)
-    formData.set('tagline', tagline)
     formData.set('description', description)
     formData.set('base_price', basePrice)
     formData.set('category', category)
@@ -98,16 +96,6 @@ export default function ProductForm({
         </label>
 
         <label className="block">
-          <span className="text-sm font-medium text-gray-700">Tagline</span>
-          <input
-            type="text"
-            value={tagline}
-            onChange={(e) => setTagline(e.target.value)}
-            className="mt-1.5 block w-full border border-gray-300 rounded-md px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#720B0B]/40 focus:border-[#720B0B] transition-shadow shadow-sm"
-          />
-        </label>
-
-        <label className="block">
           <span className="text-sm font-medium text-gray-700">Description</span>
           <textarea
             value={description}
@@ -126,6 +114,7 @@ export default function ProductForm({
             min="0"
             value={basePrice}
             onChange={(e) => setBasePrice(e.target.value)}
+            onWheel={(e) => e.currentTarget.blur()}
             className="mt-1.5 block w-full border border-gray-300 rounded-md px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#720B0B]/40 focus:border-[#720B0B] transition-shadow shadow-sm"
           />
         </label>
@@ -181,11 +170,14 @@ export default function ProductForm({
 
         {/* Product Detail Accordion Fields */}
         <div className="border-t border-gray-100 pt-6 mt-2">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">Product Detail Page Content</h3>
+          <h3 className="text-sm font-semibold text-gray-800 mb-1">Product Detail Page Content</h3>
+          <p className="text-[11px] text-gray-500 mb-4">
+            These are the defaults shown for every shade. A shade can override any of them in its own form.
+          </p>
 
           <div className="grid gap-5">
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">About the Product</span>
+              <span className="text-sm font-medium text-gray-700">What Am I?</span>
               <textarea
                 value={aboutProduct}
                 onChange={(e) => setAboutProduct(e.target.value)}
@@ -195,7 +187,7 @@ export default function ProductForm({
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">What Makes It Unique?</span>
+              <span className="text-sm font-medium text-gray-700">Why Am I irresistible?</span>
               <textarea
                 value={whatMakesUnique}
                 onChange={(e) => setWhatMakesUnique(e.target.value)}
@@ -205,7 +197,7 @@ export default function ProductForm({
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">How to Use?</span>
+              <span className="text-sm font-medium text-gray-700">Use Me Now and U will never look back</span>
               <textarea
                 value={howToUse}
                 onChange={(e) => setHowToUse(e.target.value)}
@@ -215,7 +207,7 @@ export default function ProductForm({
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Ingredients</span>
+              <span className="text-sm font-medium text-gray-700">You will love my ingredients</span>
               <textarea
                 value={ingredients}
                 onChange={(e) => setIngredients(e.target.value)}
@@ -225,7 +217,7 @@ export default function ProductForm({
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Additional Information</span>
+              <span className="text-sm font-medium text-gray-700">Something Extra</span>
               <textarea
                 value={additionalInfo}
                 onChange={(e) => setAdditionalInfo(e.target.value)}

@@ -1,20 +1,36 @@
 import { Suspense, cache } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import ShadeSelector from '@/components/public/ShadeSelector'
-import ProductAccordion from '@/components/public/ProductAccordion'
 import ProductCard from '@/components/public/ProductCard'
 import PromotionBannerResolver from '@/components/public/PromotionBannerResolver'
 import TrustBadges from '@/components/public/TrustBadges'
 import type { Product, ProductVariant, Discount, Promotion, VariantImage } from '@/lib/types'
 import { normalizeDiscount, isPromotionLive, promotionAppliesTo } from '@/lib/pricing'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// ISR: product pages are cached and served from the CDN, then revalidated in the
+// background every 5 minutes (so price/promotion edits show up without a redeploy)
+// instead of hitting the cross-region DB live on every visit.
+export const revalidate = 300
+
+export async function generateStaticParams() {
+  try {
+    const supabase = createPublicClient()
+    const { data } = await supabase
+      .from('products')
+      .select('slug')
+      .eq('is_active', true)
+    return (data ?? []).map((p) => ({ slug: p.slug as string }))
+  } catch {
+    // If the DB/env isn't reachable at build time, fall back to on-demand ISR
+    // (pages render + cache on first request) instead of failing the build.
+    return []
+  }
+}
 
 const getProductBySlug = cache(async (slug: string) => {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('products')
     .select('*, product_variants(*, discounts(*), variant_images(*)), discounts(*)')
@@ -33,8 +49,7 @@ export async function generateMetadata({
 
   return {
     title: product ? `${product.name} | Inoya Rouge` : 'Product | Inoya Rouge',
-    description:
-      product?.tagline ?? product?.description ?? 'Shop Inoya Rouge luxury cosmetics',
+    description: product?.description ?? 'Shop Inoya Rouge luxury cosmetics',
   }
 }
 
@@ -63,7 +78,7 @@ async function RelatedProducts({
   category: string
   excludeId: string
 }) {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data } = await supabase
     .from('products')
     .select('*, product_variants(*, discounts(*), variant_images(*)), discounts(*)')
@@ -109,7 +124,7 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   const [rawProduct, promotionsRes] = await Promise.all([
     getProductBySlug(slug),
@@ -142,24 +157,12 @@ export default async function ProductDetailPage({
     (p) => isPromotionLive(p) && promotionAppliesTo(p, product),
   )
 
-  // Build accordion items from product data (only show non-empty sections)
-  const accordionItems = [
-    { title: 'About the Product', content: product.about_product },
-    { title: 'What Makes It Unique?', content: product.what_makes_unique },
-    { title: 'How to Use?', content: product.how_to_use },
-    { title: 'Ingredients', content: product.ingredients },
-    { title: 'Additional Information', content: product.additional_info },
-  ].filter((item): item is { title: string; content: string } => !!item.content)
-
   return (
     <div>
       <PromotionBannerResolver category={product.category} />
-      {/* Hero section with gradient background */}
-      <ShadeSelector variants={product.variants ?? []} product={product} promotions={activePromotions}>
-        {accordionItems.length > 0 && (
-          <ProductAccordion items={accordionItems} />
-        )}
-      </ShadeSelector>
+      {/* Hero section with gradient background. The PDP description + accordion
+          resolve per selected shade (with product-level fallback) inside ShadeSelector. */}
+      <ShadeSelector variants={product.variants ?? []} product={product} promotions={activePromotions} />
 
       {/* Related products */}
       <Suspense fallback={<SkeletonRelated />}>

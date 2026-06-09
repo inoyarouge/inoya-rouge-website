@@ -23,10 +23,11 @@ export default function Sidebar({ pendingCount }: { pendingCount: number }) {
       label: 'Testimonials',
       icon: MessageSquare,
       badge: pendingCount > 0 ? pendingCount : null,
+      disabled: false,
     },
-    { href: '/admin/products', label: 'Products', icon: ShoppingBag, badge: null },
-    { href: '/admin/collections', label: 'Collections', icon: Layers, badge: null },
-    { href: '/admin/promotions', label: 'Promotions', icon: Tag, badge: null },
+    { href: '/admin/products', label: 'Products', icon: ShoppingBag, badge: null, disabled: false },
+    { href: '/admin/collections', label: 'Collections', icon: Layers, badge: null, disabled: false },
+    { href: '/admin/promotions', label: 'Promotions', icon: Tag, badge: null, disabled: true },
   ]
 
   const nav = (
@@ -34,6 +35,23 @@ export default function Sidebar({ pendingCount }: { pendingCount: number }) {
       {links.map((link) => {
         const Icon = link.icon
         const isActive = pathname.startsWith(link.href)
+
+        if (link.disabled) {
+          return (
+            <div
+              key={link.href}
+              aria-disabled="true"
+              title="Coming soon"
+              className="flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed select-none"
+            >
+              <div className="flex items-center gap-3">
+                <Icon size={18} className="text-gray-300" />
+                {link.label}
+              </div>
+            </div>
+          )
+        }
+
         return (
           <Link
             key={link.href}
