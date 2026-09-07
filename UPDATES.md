@@ -1,3 +1,22 @@
+## 2026-09-07 — Site-wide redesign against `src/design.md`, then REVERTED
+
+**Status:** REVERTED — no code from this work remains in the repo.
+
+Applied the `src/design.md` brand identity system (§5 colour, §6 type scale, §7 visual
+language, §12 token layer) across the public site, with the admin surface remapped to the
+new tokens only. Fonts were swapped to Playfair Display + Inter. Reverted in full at the
+client's request the same day via `git reset --hard f0971f3`; the five redesign commits
+were discarded (recoverable from `git reflog` for ~90 days if ever needed).
+
+`src/design.md` is **retained** — it is the brand specification, not an artefact of the
+redesign, and remains available if the work is ever revisited.
+
+Two pre-existing bugs the redesign had incidentally fixed are therefore still open:
+- `tailwind.config.ts` names `Playfair Display` for `font-serif`, but nothing loads it, so
+  the ~24 `font-serif` usages silently fall back to Georgia.
+- `no-scrollbar` (ShadeSelector) and `animate-fade-in` (CommunityStoryForm) are used in
+  markup but defined neither in the Tailwind config nor in `globals.css`.
+
 ## 2026-07-25 — Fix: UptimeRobot keep-alive never worked → Supabase project auto-paused
 
 **Status:** DONE (monitor fixed; verify green after a few cycles)
