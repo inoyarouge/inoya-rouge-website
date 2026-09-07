@@ -33,12 +33,12 @@ export default function ProductCard({ product, variant = 'default' }: { product:
       <div className="group flex flex-col relative w-full bg-transparent h-full">
         <Link href={`/shop/${product.slug}`} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-burgundy focus-visible:ring-offset-2 rounded-md flex-grow flex flex-col">
           {/* Product Image — 211:264 ratio from Figma */}
-          <div className="relative aspect-[4/5] overflow-hidden bg-[#F7F7F7] group-hover:bg-[#F2F2F2] transition-colors rounded-sm">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-sm">
             {currentImage ? (
               <Image
                 fill
                 quality={65}
-                className="object-cover mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
                 src={supabaseImageUrl(currentImage, 600)}
                 alt={product.name}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -136,7 +136,7 @@ export default function ProductCard({ product, variant = 'default' }: { product:
     return (
       <div className="group">
         <Link href={`/shop/${product.slug}`} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-burgundy focus-visible:ring-offset-2 rounded-md">
-          <div className="relative aspect-[211/264] overflow-hidden bg-gray-300">
+          <div className="relative aspect-[211/264] overflow-hidden">
             {currentImage ? (
               <Image
                 fill
@@ -192,7 +192,7 @@ export default function ProductCard({ product, variant = 'default' }: { product:
   /* ── Default variant — generic card with category label ── */
   return (
     <Link href={`/shop/${product.slug}`} className="block group focus:outline-none focus-visible:ring-2 focus-visible:ring-burgundy focus-visible:ring-offset-2 rounded-lg">
-      <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 rounded-lg">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-lg">
         {currentVariant?.image_url ? (
           <Image
             fill

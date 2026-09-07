@@ -159,7 +159,7 @@ export default function ShadeSelector({ variants, product, promotions = [] }: Sh
               </div>
 
               {/* Main Featured Image — opacity-swap within the selected shade's gallery */}
-              <div className="relative aspect-[4/5] w-full flex-grow bg-white">
+              <div className="relative aspect-[4/5] w-full flex-grow">
                 {galleryImages.map((img, i) => (
                   <Image
                     key={img.id}

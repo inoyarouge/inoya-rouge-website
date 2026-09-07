@@ -1,3 +1,26 @@
+## 2026-07-25 — Fix: UptimeRobot keep-alive never worked → Supabase project auto-paused
+
+**Status:** DONE (monitor fixed; verify green after a few cycles)
+
+The Supabase free-tier project (`uklyxfxuvmmypqjhzqvd`) got auto-paused for inactivity even
+though an UptimeRobot monitor existed. Root cause: the monitor pinged
+`/auth/v1/health` with **no `apikey` header**, so every check since May 3, 2026 failed
+(401/404 — one "Ongoing" incident, 0% uptime). No real activity ever reached Supabase through
+it; the project stayed alive only from manual usage, and paused ~7 days after that stopped.
+
+**Changes (via UptimeRobot API, monitor id 802977590):**
+- URL → `https://uklyxfxuvmmypqjhzqvd.supabase.co/rest/v1/products?select=id&limit=1`
+  (a real DB query — counts as activity for Supabase's pause detector)
+- Added custom HTTP header `apikey: <NEXT_PUBLIC_SUPABASE_ANON_KEY>` (from `.env.local`)
+- Interval unchanged: 5 min. Verified target returns HTTP 200 with a product row.
+- Registered the official UptimeRobot MCP server (`https://mcp.uptimerobot.com/mcp`) in
+  Claude Code local config (project scope) using the account's Main API key, for future
+  monitor management from chat. Key lives only in `~/.claude.json` — never in repo files.
+
+Next: confirm monitor shows green + the stale incident auto-resolves; re-check project stays
+`ACTIVE_HEALTHY` after a week. If it ever pauses again despite green checks, add an
+`/api/ping` route that queries Supabase from the app and point the monitor at that instead.
+
 ## 2026-06-09 — Fix: prices now display exactly as saved (no padding, no rounding)
 
 **Status:** DONE
@@ -1377,7 +1400,7 @@ These items are PLANNED but not started. They will be checked off and moved to t
 ### Deployment
 - [ ] Deploy to Vercel
 - [ ] Connect domain (inoyarouge.com)
-- [ ] Set up UptimeRobot ping
+- [x] Set up UptimeRobot ping (fixed + verified 2026-07-25 — see changelog entry at top)
 
 ---
 
