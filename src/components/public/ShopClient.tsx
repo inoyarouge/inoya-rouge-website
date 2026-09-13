@@ -128,7 +128,7 @@ export default function ShopClient({
         category={activeCategory === 'All' ? null : activeCategory}
       />
       {/* ── Hero Banner ── */}
-      <section className="relative w-full h-[400px] md:h-[442px] overflow-hidden bg-warm-tan">
+      <section className="relative w-full h-[400px] md:h-[442px] 2xl:h-[560px] overflow-hidden bg-warm-tan">
         {/* Background image with fade transition */}
         <AnimatePresence>
           <motion.div
@@ -190,7 +190,7 @@ export default function ShopClient({
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className={`font-display text-[clamp(60px,8vw,90px)] leading-none tracking-tight ${currentHero.theme === 'dark' ? 'text-cream font-thin' : 'text-burgundy font-normal'}`}
+              className={`font-display text-[clamp(60px,8vw,90px)] 2xl:text-[115px] leading-none tracking-tight ${currentHero.theme === 'dark' ? 'text-cream font-thin' : 'text-burgundy font-normal'}`}
             >
               {currentHero.title}
             </motion.h1>
@@ -222,7 +222,7 @@ export default function ShopClient({
 
       {/* ── Products Section ── */}
       <section id="products" className="bg-[#FFF3EE] pt-4 pb-6">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-16">
+        <div className="site-container px-6 lg:px-16">
           {/* Mobile Toolbar (3-section layout) */}
           <div className="md:hidden flex items-center border-y border-burgundy/20 h-14 mb-6 text-[12px] font-sans tracking-widest text-burgundy/80 uppercase divide-x divide-burgundy/20">
             {/* Custom Category Dropdown */}
@@ -438,8 +438,8 @@ export default function ShopClient({
                   layout
                   className={`grid ${viewMode === 'grid-1' ? 'grid-cols-1 gap-y-12' :
                     viewMode === 'grid-2' ? 'grid-cols-2 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-12' :
-                      viewMode === 'grid-3' ? 'grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-12' :
-                        'grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-12'
+                      viewMode === 'grid-3' ? 'grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-12' :
+                        'grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-12'
                     }`}
                 >
                   <AnimatePresence mode="popLayout">

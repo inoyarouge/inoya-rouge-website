@@ -21,7 +21,7 @@ export default async function TestimonialList() {
         <div className="w-full pt-16 md:pt-24 pb-12 overflow-hidden scroll-fade-up border-t border-burgundy/5 relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-[1px] bg-gradient-to-r from-transparent via-burgundy/20 to-transparent" />
 
-            <h3 className="font-accent italic text-[clamp(24px,3vw,32px)] text-accent-pink text-center leading-tight tracking-tight mb-10">
+            <h3 className="font-accent italic text-[clamp(24px,3vw,32px)] 2xl:text-[38px] text-[#7A0000] text-center leading-tight tracking-tight mb-10">
                 Loved By Our Community
             </h3>
 
@@ -45,7 +45,7 @@ export default async function TestimonialList() {
                                     {t.title}
                                 </h4>
                             )}
-                            <p className="relative z-10 font-sans text-[15px] md:text-[16px] text-[#2c2c2c] leading-[1.7] font-light mb-8 italic">
+                            <p className="relative z-10 font-sans text-[15px] md:text-[16px] text-[#2c2c2c] leading-[1.7] font-light mb-8 italic text-justify">
                                 "{t.content}"
                             </p>
                             <div className="relative z-10 flex items-center gap-4 mt-auto pt-6 border-t border-burgundy/5">

@@ -171,7 +171,7 @@ export default function OurStoryPage() {
 
       {/* Hero band — image background with overlaid pill + display heading + tagline */}
       <section className="relative bg-cream">
-        <div className="relative h-[400px] md:h-[442px] w-full overflow-hidden">
+        <div className="relative h-[400px] md:h-[442px] 2xl:h-[560px] w-full overflow-hidden">
           {/* Desktop banner */}
           <Image
             src="/images/about us/about us banner.jpeg"
@@ -248,6 +248,7 @@ export default function OurStoryPage() {
               alt="Inoya Rouge Founders Signature"
               fill
               className="object-contain object-left mix-blend-multiply"
+              sizes="(max-width: 768px) 336px, 413px"
             />
           </div>
         </div>
@@ -292,7 +293,7 @@ export default function OurStoryPage() {
             {productPillars.map(({ icon, label }) => (
               <li key={label} className="flex items-center gap-4 md:gap-5">
                 <div className="relative w-9 h-9 md:w-10 md:h-10 shrink-0">
-                  <Image src={icon} alt="" fill className="object-contain" />
+                  <Image src={icon} alt="" fill className="object-contain" sizes="40px" />
                 </div>
                 <span className="font-sans text-base md:text-lg text-black leading-relaxed">
                   {label}

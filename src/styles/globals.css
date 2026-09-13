@@ -49,6 +49,15 @@
    Reveal: left → right  |  Wipe: right → left
 ──────────────────────────────────────────────────────────────────────────── */
 @layer components {
+  /* Site content container: capped at 1440, opening to 1600 on very large
+     screens. Deliberately sets no padding — call sites supply their own. */
+  .site-container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 1440px;
+  }
+
   .nav-underline-link {
     position: relative;
   }
@@ -115,4 +124,83 @@
 
 .animate-ticker:hover {
   animation-play-state: paused;
+}
+
+/* ─── Cookie notice enter/exit ────────────────────────────────────────────── */
+/* Replaces two gsap tweens. gsap was being imported by CookieNotice, which sits
+   in the public layout, so gsap core landed in the shared chunk of every route. */
+@keyframes cookieNoticeIn {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cookieNoticeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(20px); }
+}
+
+/* matches the old gsap: duration 1.2s, delay 0.8s, ease power3.out */
+.cookie-notice-enter {
+  animation: cookieNoticeIn 1.2s cubic-bezier(0.215, 0.61, 0.355, 1) 0.8s both;
+}
+
+/* matches the old gsap: duration 0.4s, ease power2.in */
+.cookie-notice-exit {
+  animation: cookieNoticeOut 0.4s cubic-bezier(0.55, 0.085, 0.68, 0.53) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cookie-notice-enter,
+  .cookie-notice-exit {
+    animation-duration: 0.01ms;
+    animation-delay: 0s;
+  }
+}
+
+/* ─── 404 page entrance ───────────────────────────────────────────────────── */
+/* Replaces a gsap timeline. not-found.tsx is a client page that Next includes in
+   every route's shell, so a static gsap import there loaded gsap on ALL pages. */
+@keyframes notFoundRise {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* was: y:30, duration 1, power3.out */
+.not-found-subtext {
+  animation: notFoundRise 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+
+/* was: y:20, duration 0.8, power2.out, starting 0.4s into the previous tween */
+.not-found-cta {
+  animation: notFoundRise 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.4s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .not-found-subtext,
+  .not-found-cta {
+    animation-duration: 0.01ms;
+    animation-delay: 0s;
+  }
+}
+
+/* Large-screen container step (2xl / 1536px+) */
+@media (min-width: 1536px) {
+  .site-container {
+    max-width: 1600px;
+  }
+}
+
+/* Hero entrance: the initial hidden state lives in CSS so it applies BEFORE first paint.
+   Previously HomePageAnimator used gsap.from({opacity:0}), which let the hero paint fully
+   visible and then snapped it invisible on hydration — a visible flash. GSAP now animates
+   TO visible instead. Only .hero-text-anim gets this; the scroll-triggered classes stay on
+   gsap.from so they can never be left permanently invisible if JS fails below the fold. */
+.hero-text-anim {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-text-anim {
+    opacity: 1;
+  }
 }

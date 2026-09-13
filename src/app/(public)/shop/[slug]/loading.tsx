@@ -1,6 +1,6 @@
 export default function ProductDetailLoading() {
   return (
-    <div className="max-w-[1400px] mx-auto px-6 lg:px-16 py-8 md:py-12">
+    <div className="site-container px-6 lg:px-16 py-8 md:py-12">
       <div className="h-4 w-40 bg-gray-200 animate-pulse mb-6" />
       <div className="flex flex-col md:grid md:grid-cols-2 lg:grid-cols-[60%_40%] gap-8 md:gap-12">
         <div className="relative aspect-[3/4] overflow-hidden bg-gray-200 animate-pulse" />

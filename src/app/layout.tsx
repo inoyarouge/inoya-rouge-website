@@ -1,33 +1,20 @@
 import type { Metadata, Viewport } from 'next'
-import localFont from 'next/font/local'
-import { Newsreader } from 'next/font/google'
-import { Suspense } from 'react'
+import { Playfair_Display, Inter } from 'next/font/google'
 import '@/styles/globals.css'
 import SmoothScrollGate from '@/components/providers/SmoothScrollGate'
 
-const agatho = localFont({
-  src: [
-    { path: '../../public/fonts/agatho/Agatho Light.woff2', weight: '300', style: 'normal' },
-    { path: '../../public/fonts/agatho/Agatho.woff2', weight: '400', style: 'normal' },
-  ],
-  variable: '--font-display',
-  display: 'swap',
-})
-
-const satoshi = localFont({
-  src: [
-    { path: '../../public/fonts/satoshi/Satoshi-Regular.woff2', weight: '400', style: 'normal' },
-    { path: '../../public/fonts/satoshi/Satoshi-Medium.woff2', weight: '500', style: 'normal' },
-  ],
-  variable: '--font-satoshi',
-  display: 'swap',
-})
-
-const newsreader = Newsreader({
+const playfair = Playfair_Display({
   subsets: ['latin'],
   style: ['normal', 'italic'],
-  weight: ['400', '500'],
-  variable: '--font-newsreader',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-playfair',
+  display: 'swap',
+})
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-inter',
   display: 'swap',
 })
 
@@ -53,10 +40,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${agatho.variable} ${satoshi.variable} ${newsreader.variable} font-sans antialiased bg-cream text-gray-900`}>
-        <Suspense fallback={children}>
-          <SmoothScrollGate>{children}</SmoothScrollGate>
-        </Suspense>
+      <body className={`${playfair.variable} ${inter.variable} font-sans antialiased bg-cream text-gray-900`}>
+        <SmoothScrollGate>{children}</SmoothScrollGate>
       </body>
     </html>
   )

@@ -167,7 +167,7 @@ export default function ContactClient({
                     sizes="100vw"
                 />
                 <motion.div
-                    className="relative z-10 max-w-[700px] mx-auto bg-white/30 backdrop-blur-sm border border-white/40 rounded-2xl px-8 md:px-16 py-12 md:py-16 shadow-xl"
+                    className="relative z-10 max-w-[700px] mx-auto bg-white/30 backdrop-blur-sm border border-white/40 rounded-none px-8 md:px-16 py-12 md:py-16 shadow-xl"
                     initial={{ opacity: 0, y: 40 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-50px" }}
@@ -179,7 +179,7 @@ export default function ContactClient({
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                            className="font-accent text-[clamp(40px,5.5vw,66px)] text-burgundy-dark tracking-tight leading-[0.9]"
+                            className="font-accent text-[clamp(40px,5.5vw,66px)] 2xl:text-[76px] text-[#7A0000] tracking-tight leading-[0.9]"
                         >
                             Your Shade,
                         </motion.h2>
@@ -188,7 +188,7 @@ export default function ContactClient({
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                            className="font-accent italic text-[clamp(48px,6.5vw,78px)] text-accent-pink tracking-tight leading-[0.9]"
+                            className="font-accent italic text-[clamp(48px,6.5vw,78px)] 2xl:text-[90px] text-[#7A0000] tracking-tight leading-[0.9]"
                         >
                             Your Story.
                         </motion.h2>

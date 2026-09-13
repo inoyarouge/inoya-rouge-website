@@ -2,32 +2,13 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRef, Suspense } from 'react'
-import { gsap } from 'gsap'
-import { useGSAP } from '@gsap/react'
+import { Suspense } from 'react'
 import Navbar from '@/components/public/Navbar'
 import NavigationProgress from '@/components/public/NavigationProgress'
 
 export default function NotFound() {
-  const container = useRef<HTMLDivElement>(null)
-
-  useGSAP(() => {
-    const tl = gsap.timeline()
-
-    tl.from('.not-found-subtext', {
-      y: 30,
-      opacity: 0,
-      duration: 1,
-      ease: 'power3.out',
-    }, '-=1')
-      .from('.not-found-cta', {
-        y: 20,
-        opacity: 0,
-        duration: 0.8,
-        ease: 'power2.out',
-      }, '-=0.6')
-  }, { scope: container })
-
+  // Entrance animation is pure CSS (.not-found-subtext / .not-found-cta in
+  // globals.css) so this page does not pull gsap into every route's shell.
   return (
     <>
       <Suspense fallback={null}>
@@ -35,7 +16,7 @@ export default function NotFound() {
       </Suspense>
       <Navbar />
 
-      <main ref={container} className="relative w-full bg-cream flex flex-col justify-center items-center px-6 md:px-16 lg:px-[100px] xl:px-[140px] mt-[50px] md:mt-[60px]" style={{ minHeight: 'calc(100dvh - 60px)' }}>
+      <main className="relative w-full bg-cream flex flex-col justify-center items-center px-6 md:px-16 lg:px-[100px] xl:px-[140px] mt-[50px] md:mt-[60px]" style={{ minHeight: 'calc(100dvh - 60px)' }}>
         {/* Global Noise Overlay */}
         <div className="pointer-events-none fixed inset-0 z-[9999] opacity-[0.03]">
           <svg className="h-full w-full">
@@ -57,6 +38,7 @@ export default function NotFound() {
               alt="404 — Lost in the garden"
               fill
               className="object-cover object-center blur-[0.6px]"
+              sizes="100vw"
               priority
             />
           </div>
@@ -67,6 +49,7 @@ export default function NotFound() {
               alt="404 — Lost in the garden"
               fill
               className="object-cover object-center blur-[0.6px]"
+              sizes="100vw"
               priority
             />
           </div>

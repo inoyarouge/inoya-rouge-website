@@ -18,7 +18,7 @@ export default function CommunityClient({
             {promotionBanner}
 
             {/* Hero Banner Section */}
-            <div className="relative w-full overflow-hidden mb-12 lg:mb-16 h-[400px] md:h-[442px] flex flex-col justify-center">
+            <div className="relative w-full overflow-hidden mb-12 lg:mb-16 h-[400px] md:h-[442px] 2xl:h-[560px] flex flex-col justify-center">
                 <Image
                     src="/images/community/community desktop banner.jpeg"
                     alt=""
@@ -59,7 +59,7 @@ export default function CommunityClient({
                     >
                         <button
                             onClick={() => document.getElementById('story-form')?.scrollIntoView({ behavior: 'smooth' })}
-                            className="bg-burgundy text-white px-8 py-3.5 font-sans text-[13px] tracking-[0.1em] uppercase hover:bg-[#5a0d0d] hover:scale-105 transition-all duration-300 w-full sm:w-auto"
+                            className="bg-[#7A0000] text-white px-8 py-3.5 font-sans text-[13px] tracking-[0.1em] uppercase hover:bg-[#5a0d0d] hover:scale-105 transition-all duration-300 w-full sm:w-auto"
                         >
                             Share Your Story
                         </button>
@@ -74,7 +74,7 @@ export default function CommunityClient({
             </div>
 
             {/* Stories Grid */}
-            <section id="stories-grid" className="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-10 md:py-16">
+            <section id="stories-grid" className="max-w-6xl 2xl:max-w-[1400px] mx-auto px-4 md:px-8 lg:px-12 py-10 md:py-16">
                 {testimonials.length === 0 ? (
                     <p className="text-gray-500 text-center py-12 font-sans text-lg">
                         Be the first to share your Inoya Rouge story.
@@ -100,7 +100,7 @@ export default function CommunityClient({
                                         {t.title}
                                     </h3>
                                 )}
-                                <p className="relative z-10 font-sans text-[15px] md:text-[16px] text-[#2c2c2c] leading-[1.7] font-light mb-8 italic">
+                                <p className="relative z-10 font-sans text-[15px] md:text-[16px] text-[#2c2c2c] leading-[1.7] font-light mb-8 italic text-justify">
                                     "{t.content}"
                                 </p>
                                 <footer className="relative z-10 flex items-center justify-between mt-auto pt-6 border-t border-burgundy/5">
@@ -134,7 +134,7 @@ export default function CommunityClient({
                     sizes="100vw"
                 />
                 <motion.div
-                    className="relative z-10 max-w-[700px] mx-auto bg-white/30 backdrop-blur-sm border border-white/40 rounded-2xl px-8 md:px-16 py-12 md:py-16 shadow-xl"
+                    className="relative z-10 max-w-[700px] mx-auto bg-white/30 backdrop-blur-sm border border-white/40 rounded-none px-8 md:px-16 py-12 md:py-16 shadow-xl"
                     initial={{ opacity: 0, y: 40 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-50px" }}
@@ -146,7 +146,7 @@ export default function CommunityClient({
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                            className="font-accent text-[clamp(40px,5.5vw,66px)] text-burgundy-dark tracking-tight leading-[0.9]"
+                            className="font-accent text-[clamp(40px,5.5vw,66px)] 2xl:text-[76px] text-[#7A0000] tracking-tight leading-[0.9]"
                         >
                             Share Your
                         </motion.h2>
@@ -155,7 +155,7 @@ export default function CommunityClient({
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                            className="font-accent italic text-[clamp(48px,6.5vw,78px)] text-accent-pink tracking-tight leading-[0.9]"
+                            className="font-accent italic text-[clamp(48px,6.5vw,78px)] 2xl:text-[90px] text-[#7A0000] tracking-tight leading-[0.9]"
                         >
                             Story.
                         </motion.h2>

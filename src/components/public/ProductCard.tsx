@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useState } from 'react'
 import type { Product, ProductVariant } from '@/lib/types'
 import { computePrice, formatINR } from '@/lib/pricing'
-import { supabaseImageUrl } from '@/lib/supabase/imageUrl'
 
 function primaryImageUrl(v: ProductVariant | undefined): string | null {
   if (!v) return null
@@ -39,9 +38,9 @@ export default function ProductCard({ product, variant = 'default' }: { product:
                 fill
                 quality={65}
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
-                src={supabaseImageUrl(currentImage, 600)}
+                src={currentImage}
                 alt={product.name}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 373px, 290px"
               />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400 text-sm font-sans">
@@ -56,7 +55,7 @@ export default function ProductCard({ product, variant = 'default' }: { product:
               {product.category}
             </div>
 
-            {/* Product Name — agatho regular (mapped to font-display), left aligned */}
+            {/* Product Name — Playfair Display regular (font-display), left aligned */}
             <h3 className="font-display text-[18px] md:text-[22px] text-burgundy tracking-wide leading-snug line-clamp-2 pl-0.5 group-hover:text-burgundy-red transition-colors">
               {product.name}
             </h3>
@@ -96,7 +95,7 @@ export default function ProductCard({ product, variant = 'default' }: { product:
                 aria-label={v.shade_name}
                 aria-pressed={currentVariant?.id === v.id}
                 title={v.shade_name}
-                className={`w-[20px] h-[20px] rounded-full border border-burgundy/20 p-[1px] hover:border-burgundy cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-burgundy focus-visible:ring-offset-2 ${currentVariant?.id === v.id ? 'ring-1 ring-burgundy ring-offset-1' : ''}`}
+                className={`w-[20px] h-[20px] rounded-full cursor-pointer transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-burgundy focus-visible:ring-offset-2 ${currentVariant?.id === v.id ? 'ring-2 ring-burgundy ring-offset-2' : 'ring-1 ring-burgundy/20 hover:ring-burgundy/60'}`}
               >
                 <span
                   className="block w-full h-full rounded-full"
@@ -142,9 +141,9 @@ export default function ProductCard({ product, variant = 'default' }: { product:
                 fill
                 quality={65}
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                src={supabaseImageUrl(currentImage, 600)}
+                src={currentImage}
                 alt={product.name}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 380px"
               />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500 text-sm">
@@ -178,7 +177,7 @@ export default function ProductCard({ product, variant = 'default' }: { product:
           className="group/btn relative flex w-full bg-peach overflow-hidden text-burgundy font-sans text-[11px] tracking-[0.6px] uppercase text-center mt-2 min-h-[44px] items-center justify-center rounded-sm transition-all duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.02] hover:-translate-y-px hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-burgundy focus-visible:ring-offset-2"
         >
           {/* Sliding background layer */}
-          <span className="absolute inset-0 w-full h-full bg-[#7D0000] -translate-x-[101%] group-hover/btn:translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]" />
+          <span className="absolute inset-0 w-full h-full bg-[#7A0000] -translate-x-[101%] group-hover/btn:translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]" />
 
           {/* Text */}
           <span className="relative z-10 transition-colors duration-500 group-hover/btn:text-white">
@@ -198,9 +197,9 @@ export default function ProductCard({ product, variant = 'default' }: { product:
             fill
             quality={65}
             className="object-cover group-hover:scale-105 transition-transform duration-300"
-            src={supabaseImageUrl(currentVariant.image_url ?? '', 600)}
+            src={currentVariant.image_url ?? ''}
             alt={product.name}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 373px, 290px"
           />
         ) : (
           <div className="flex items-center justify-center h-full text-gray-400 text-sm">

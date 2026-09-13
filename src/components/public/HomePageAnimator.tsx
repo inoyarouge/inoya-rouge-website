@@ -13,14 +13,25 @@ export default function HomePageAnimator() {
   useGSAP(() => {
     // Basic context for cleanup handles itself with useGSAP
     
-    // 1. Hero text fade up
-    gsap.from('.hero-text-anim', {
-      y: 40,
-      opacity: 0,
-      duration: 1.2,
-      stagger: 0.15,
-      ease: 'power3.out',
-      delay: 0.2, // slight delay for initial load
+    // 1. Hero text fade up.
+    // Animates TO visible: .hero-text-anim starts at opacity:0 in globals.css so the hero
+    // never paints visible and then snaps out. gsap.from would reintroduce that flash.
+    const mm = gsap.matchMedia()
+
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      gsap.set('.hero-text-anim', { y: 40 })
+      gsap.to('.hero-text-anim', {
+        y: 0,
+        opacity: 1,
+        duration: 1.2,
+        stagger: 0.15,
+        ease: 'power3.out',
+        delay: 0.2, // slight delay for initial load
+      })
+    })
+
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set('.hero-text-anim', { opacity: 1, y: 0 })
     })
 
     // Hero image slow dynamic zoom out
@@ -85,7 +96,10 @@ export default function HomePageAnimator() {
       requestAnimationFrame(() => ScrollTrigger.refresh())
     )
 
-    return () => cancelAnimationFrame(raf)
+    return () => {
+      cancelAnimationFrame(raf)
+      mm.revert()
+    }
   })
 
   return null

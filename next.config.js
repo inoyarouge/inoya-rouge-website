@@ -27,6 +27,13 @@ const nextConfig = {
   },
   images: {
     formats: ['image/avif', 'image/webp'],
+    // Optimized images are cached for a year. Upload paths are timestamped
+    // (see ImageUploader), so every new upload is a new URL — a long TTL is safe.
+    // The default is 60s, which meant most visitors hit a cold optimizer and
+    // re-paid the full source fetch + AVIF encode.
+    minimumCacheTTL: 31536000,
+    // Next 15 rejects quality values not listed here. These are the ones in use.
+    qualities: [60, 65, 70, 75, 80],
     deviceSizes: [640, 750, 828, 1080, 1200, 1440, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [

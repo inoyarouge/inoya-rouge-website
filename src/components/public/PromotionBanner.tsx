@@ -48,13 +48,16 @@ function CountdownLabel({ timeLeft }: { timeLeft: TimeLeft }) {
 }
 
 export default function PromotionBanner({ promotion }: { promotion: Promotion }) {
-  const [dismissed, setDismissed] = useState(true)
+  // Visible by default so the banner is present on first paint. Starting dismissed made it
+  // pop in after hydration and push the whole page down ~36px on every load. The resolver
+  // only renders this when an active promotion exists, so default-visible is correct; the
+  // effect below only hides it for someone who already dismissed it this session.
+  const [dismissed, setDismissed] = useState(false)
   const timeLeft = useCountdown(promotion.ends_at)
 
   useEffect(() => {
     const key = `promo_dismissed:${promotion.id}`
-    const isDismissed = sessionStorage.getItem(key) === '1'
-    setDismissed(isDismissed)
+    if (sessionStorage.getItem(key) === '1') setDismissed(true)
   }, [promotion.id])
 
   if (dismissed) return null
@@ -81,7 +84,7 @@ export default function PromotionBanner({ promotion }: { promotion: Promotion })
           lineOpacity={0.65}
         />
       </div>
-      <div className="relative z-10 max-w-[1440px] mx-auto px-10 w-full text-center text-[12px] md:text-[13px] tracking-wide flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+      <div className="relative z-10 site-container px-10 w-full text-center text-[12px] md:text-[13px] tracking-wide flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
         {customMessage ? (
           <>
             <span className="uppercase text-[10px] tracking-[0.12em] bg-white/15 px-2 py-0.5 rounded-sm">

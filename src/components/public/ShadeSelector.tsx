@@ -8,7 +8,6 @@ import BuyNowModal from './BuyNowModal'
 import OffersPanel from './OffersPanel'
 import ProductAccordion from './ProductAccordion'
 import { ChevronDown } from 'lucide-react'
-import { supabaseImageUrl } from '@/lib/supabase/imageUrl'
 
 interface ShadeSelectorProps {
   variants: ProductVariant[]
@@ -125,12 +124,12 @@ export default function ShadeSelector({ variants, product, promotions = [] }: Sh
   }
 
   return (
-    <div className="bg-cream min-h-[calc(100vh-80px)] md:py-16 py-8">
-      <div className="max-w-[1200px] mx-auto px-4">
+    <div className="bg-cream min-h-[calc(100dvh-60px)] md:py-16 py-8">
+      <div className="max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-4">
         <div className="flex flex-col md:flex-row gap-8 md:gap-16 items-start">
 
           {/* Left Column: Images + Accordion */}
-          <div className="w-full md:w-[55%] flex flex-col gap-8 md:gap-12">
+          <div className="w-full md:w-[55%] 2xl:w-[60%] flex flex-col gap-8 md:gap-12">
 
             {/* Images */}
             <div className="flex flex-col-reverse md:flex-row gap-4">
@@ -147,7 +146,7 @@ export default function ShadeSelector({ variants, product, promotions = [] }: Sh
                       }`}
                   >
                     <Image
-                      src={supabaseImageUrl(img.url, 160)}
+                      src={img.url}
                       alt={`${product.name} — ${selectedVariant?.shade_name ?? ''} thumbnail ${i + 1}`}
                       fill
                       quality={60}
@@ -163,13 +162,13 @@ export default function ShadeSelector({ variants, product, promotions = [] }: Sh
                 {galleryImages.map((img, i) => (
                   <Image
                     key={img.id}
-                    src={supabaseImageUrl(img.url, 800)}
+                    src={img.url}
                     alt={`${product.name} — ${selectedVariant?.shade_name ?? ''}`}
                     fill
                     quality={70}
                     className={`object-cover transition-opacity duration-300 ${i === selectedImageIndex ? 'opacity-100 relative' : 'opacity-0 absolute inset-0'
                       }`}
-                    sizes="(max-width: 768px) 100vw, 50vw"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1536px) 620px, 740px"
                     priority={i === 0 && selectedIndex === 0}
                   />
                 ))}
@@ -190,8 +189,8 @@ export default function ShadeSelector({ variants, product, promotions = [] }: Sh
           </div>
 
           {/* Right Column: Product Content */}
-          <div className="w-full md:w-[45%] flex flex-col md:py-4 md:sticky md:top-28 md:self-start">
-            <h1 className="font-serif text-4xl lg:text-5xl leading-[1.1] text-burgundy mb-6 tracking-wide">
+          <div className="w-full md:w-[45%] 2xl:w-[40%] flex flex-col md:py-4 md:sticky md:top-28 md:self-start">
+            <h1 className="font-serif text-4xl lg:text-5xl 2xl:text-6xl leading-[1.1] text-burgundy mb-6 tracking-wide">
               {product.name}
             </h1>
 

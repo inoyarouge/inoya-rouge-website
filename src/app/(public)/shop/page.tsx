@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 function SkeletonGrid() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-12">
+    <div className="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-12">
       {Array.from({ length: 8 }, (_, i) => (
         <div key={i}>
           <div className="aspect-[211/264] bg-gray-200 animate-pulse" />
@@ -34,9 +34,9 @@ function SkeletonGrid() {
 function ShopSkeleton() {
   return (
     <div>
-      <section className="w-full h-[400px] md:h-[442px] bg-gray-200 animate-pulse" />
+      <section className="w-full h-[400px] md:h-[442px] 2xl:h-[560px] bg-gray-200 animate-pulse" />
       <section className="bg-[#FFF3EE]">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-16 pt-8 pb-16">
+        <div className="site-container px-6 lg:px-16 pt-8 pb-16">
           <SkeletonGrid />
         </div>
       </section>

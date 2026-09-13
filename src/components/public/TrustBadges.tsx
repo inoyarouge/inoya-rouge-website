@@ -15,8 +15,8 @@ const tickerItems = [...badges, ...badges, ...badges]
 export default function TrustBadges() {
   return (
     <section className="bg-[#FFF3EE] border-t border-burgundy/10 py-16 md:py-24 w-full overflow-hidden">
-      <div className="max-w-[1440px] mx-auto flex flex-col items-center justify-center">
-        <h2 className="px-6 text-[#720B0B] font-sans text-[clamp(24px,3vw,32px)] text-center max-w-[600px] leading-[1.3] mb-12 md:mb-16 font-medium tracking-wide">
+      <div className="site-container flex flex-col items-center justify-center">
+        <h2 className="px-6 text-[#720B0B] font-sans text-[clamp(24px,3vw,32px)] 2xl:text-[38px] text-center max-w-[600px] leading-[1.3] mb-12 md:mb-16 font-medium tracking-wide">
           Beauty should never come <br className="md:hidden" />at the cost of your skin.
         </h2>
 

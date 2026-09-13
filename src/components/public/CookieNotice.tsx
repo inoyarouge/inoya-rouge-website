@@ -3,13 +3,12 @@
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { Cookie, X } from 'lucide-react'
-import { gsap } from 'gsap'
-import { useGSAP } from '@gsap/react'
 
 const STORAGE_KEY = 'inoya_cookie_notice_ack'
 
 export default function CookieNotice() {
   const [visible, setVisible] = useState(false)
+  const [dismissing, setDismissing] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -19,34 +18,11 @@ export default function CookieNotice() {
   }, [])
 
   function handleDismiss() {
-    if (!containerRef.current) return
-
-    const tl = gsap.timeline({
-      onComplete: () => {
-        localStorage.setItem(STORAGE_KEY, '1')
-        setVisible(false)
-      }
-    })
-
-    tl.to(containerRef.current, {
-      y: 20,
-      opacity: 0,
-      duration: 0.4,
-      ease: 'power2.in'
-    })
+    // Persist immediately so the choice sticks even if the exit animation
+    // never finishes (reduced motion, background tab, navigation mid-exit).
+    localStorage.setItem(STORAGE_KEY, '1')
+    setDismissing(true)
   }
-
-  useGSAP(() => {
-    if (visible && containerRef.current) {
-      gsap.from(containerRef.current, {
-        y: 40,
-        opacity: 0,
-        duration: 1.2,
-        delay: 0.8,
-        ease: 'power3.out'
-      })
-    }
-  }, { dependencies: [visible], scope: containerRef })
 
   if (!visible) return null
 
@@ -55,7 +31,14 @@ export default function CookieNotice() {
       ref={containerRef}
       role="region"
       aria-label="Cookie notice"
-      className="fixed bottom-6 right-6 z-[55] w-[calc(100vw-3rem)] sm:w-[320px]"
+      onAnimationEnd={(e) => {
+        // Only the exit animation unmounts; ignore the enter animation and any
+        // animation bubbling up from descendants (e.g. the button shine sweep).
+        if (dismissing && e.target === e.currentTarget) setVisible(false)
+      }}
+      className={`fixed bottom-6 right-6 z-[55] w-[calc(100vw-3rem)] sm:w-[320px] ${
+        dismissing ? 'cookie-notice-exit' : 'cookie-notice-enter'
+      }`}
     >
       <div className="relative bg-white/95 backdrop-blur-md border border-burgundy/20 rounded-none shadow-[0_15px_40px_rgba(122,0,0,0.06)] p-5 md:p-6">
         

@@ -248,6 +248,16 @@ const SmoothWavyCanvas = ({
         requestIdRef.current = requestAnimationFrame(animate)
     }, [backgroundColor, primaryColor, secondaryColor, accentColor, lineOpacity, animationSpeed])
 
+    // Draw exactly one frame, without scheduling another. Used to paint a static
+    // frame when motion is suppressed, so the banner never renders as a blank box.
+    const drawStaticFrame = useCallback(() => {
+        animate()
+        if (requestIdRef.current) {
+            cancelAnimationFrame(requestIdRef.current)
+            requestIdRef.current = null
+        }
+    }, [animate])
+
     useEffect(() => {
         const canvas = canvasRef.current
         if (!canvas) return
@@ -260,23 +270,71 @@ const SmoothWavyCanvas = ({
         canvas.addEventListener("mousedown", handleMouseDown)
         canvas.addEventListener("mouseup", handleMouseUp)
 
-        animate()
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
+
+        // This loop is expensive (tens of thousands of trig/sqrt ops per frame).
+        // Only run it when the banner is actually on screen, the tab is visible,
+        // and the user hasn't asked for reduced motion.
+        let onScreen = false
+
+        const running = () => requestIdRef.current !== null
+
+        const start = () => {
+            if (running()) return
+            if (!onScreen || document.hidden || reduceMotion.matches) return
+            animate()
+        }
+
+        const stop = () => {
+            if (requestIdRef.current) {
+                cancelAnimationFrame(requestIdRef.current)
+                requestIdRef.current = null
+            }
+        }
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                onScreen = entry.isIntersecting
+                if (onScreen) start()
+                else stop()
+            },
+            { rootMargin: "100px" },
+        )
+        observer.observe(canvas)
+
+        const handleVisibility = () => {
+            if (document.hidden) stop()
+            else start()
+        }
+        document.addEventListener("visibilitychange", handleVisibility)
+
+        const handleMotionPreference = () => {
+            if (reduceMotion.matches) {
+                stop()
+                drawStaticFrame()
+            } else {
+                start()
+            }
+        }
+        reduceMotion.addEventListener("change", handleMotionPreference)
+
+        if (reduceMotion.matches) drawStaticFrame()
 
         return () => {
             window.removeEventListener("resize", handleResize)
             canvas.removeEventListener("mousemove", handleMouseMove)
             canvas.removeEventListener("mousedown", handleMouseDown)
             canvas.removeEventListener("mouseup", handleMouseUp)
+            document.removeEventListener("visibilitychange", handleVisibility)
+            reduceMotion.removeEventListener("change", handleMotionPreference)
+            observer.disconnect()
 
-            if (requestIdRef.current) {
-                cancelAnimationFrame(requestIdRef.current)
-                requestIdRef.current = null
-            }
+            stop()
 
             timeRef.current = 0
             energyFields.current = []
         }
-    }, [animate, resizeCanvas, handleMouseMove, handleMouseDown, handleMouseUp])
+    }, [animate, drawStaticFrame, resizeCanvas, handleMouseMove, handleMouseDown, handleMouseUp])
 
     return (
         <div className="absolute inset-0 w-full h-full overflow-hidden" style={{ backgroundColor }}>

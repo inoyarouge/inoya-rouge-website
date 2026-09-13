@@ -107,7 +107,7 @@ export default function CuratedCollectionCarousel({ products }: { products: Prod
                       alt="More on the way"
                       fill
                       className="object-cover grayscale-[0.5] opacity-80 transition-all duration-[1500ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-105 group-hover:grayscale-[0.2] group-hover:opacity-100"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 380px"
                     />
                     
                     {/* Dark gradient for mystery */}

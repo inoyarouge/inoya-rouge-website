@@ -44,13 +44,13 @@ function FooterColumn({ heading, links, className = '' }: { heading: string; lin
 
 export default function Footer() {
   return (
-    <footer className="bg-burgundy-red">
-      <div className="max-w-[1440px] mx-auto px-6 sm:px-10 md:px-16 pt-16 sm:pt-20 md:pt-24 pb-10 sm:pb-12">
+    <footer className="bg-[#7A0000]">
+      <div className="site-container px-6 sm:px-10 md:px-16 pt-16 sm:pt-20 md:pt-24 pb-10 sm:pb-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-16 xl:gap-20">
 
           {/* Column 1: Brand */}
           <div className="sm:col-span-2 lg:col-span-2 lg:pr-10 xl:pr-16">
-            <h2 className="font-display text-[36px] sm:text-[40px] lg:text-[44px] text-[#fff8f6] tracking-tight leading-none">
+            <h2 className="font-display text-[36px] sm:text-[40px] lg:text-[44px] 2xl:text-[56px] text-[#fff8f6] tracking-tight leading-none">
               INOYA ROUGE
             </h2>
             <p className="font-accent italic text-[18px] sm:text-[19px] md:text-[20px] text-white/60 tracking-tight mt-4 sm:mt-5 leading-snug">

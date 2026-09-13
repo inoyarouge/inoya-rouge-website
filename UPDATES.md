@@ -1,3 +1,746 @@
+## 2026-09-14 — Update mobile hero image asset (again)
+
+**Status:** DONE
+
+Replaced `public/images/mobile images/mobile hero.jpeg` with another updated
+version (853x1844, portrait, 97KB). Same filename/path as before, so no code
+changes needed — `src/app/(public)/page.tsx:146` already references this exact
+path for the mobile hero `<Image>`.
+
+### Verified
+- New file confirmed as valid JPEG at 853x1844.
+- No other files reference this image path.
+
+---
+
+## 2026-09-13 — Site-wide perf: gsap off every public route, canvas loop gated
+
+**Status:** DONE
+
+Follow-up to the image-pipeline entry below. Two site-wide costs addressed.
+
+### 1. gsap was loading on every public page — now on none
+
+The earlier note blamed `CookieNotice`. That was only one of three causes; removing it
+alone changed nothing measurable. Traced properly by walking the `<script>` tags in the
+built HTML back to their chunks:
+
+1. `CookieNotice` statically imported gsap and sits in the public layout.
+2. `SmoothScrollGate` imported `SmoothScrollProvider` **statically** (the `next/dynamic`
+   wrapper had been lost), so lenis + gsap + ScrollTrigger were in the layout chunk for
+   every route. Its `shouldEnable()` allowlist gates when the provider *runs*, not when
+   its code is *downloaded*.
+3. The real one: `not-found.tsx` and `HomePageAnimator`. Next ships the root not-found
+   and the `(public)` route group's page chunk on sibling routes, so a static gsap import
+   in either put gsap on every public page.
+
+**Fixes**
+- `CookieNotice.tsx` — two gsap tweens replaced with CSS (`cookie-notice-enter` /
+  `cookie-notice-exit` in `globals.css`), same durations/easings. Dismissal now persists
+  to localStorage *immediately* rather than in an `onComplete`, so the choice sticks even
+  if the exit animation never finishes; `onAnimationEnd` unmounts, guarded with
+  `e.target === e.currentTarget` so the button's shine sweep can't unmount it early.
+- `not-found.tsx` — gsap timeline replaced with CSS (`notFoundRise` keyframes); dropped
+  the now-unused `useRef` container.
+- `SmoothScrollGate.tsx` — restored `dynamic(() => import('./SmoothScrollProvider'),
+  { ssr: false })`. Splits lenis into its own on-demand chunk.
+- `HomePageAnimatorGate.tsx` (new) — `ssr: false` is only permitted inside a Client
+  Component, and it is what actually keeps a module out of the server payload;
+  `dynamic()` without it still bundles into the page chunk (verified — no change).
+  The gate is a 'use client' wrapper so the homepage (a Server Component) can defer it.
+
+**Measured, from the built HTML:**
+
+| | gsap `<script>` tags |
+|---|---|
+| Before | **2** on every public route |
+| After | **0** on every public route |
+
+Homepage First Load JS: **166 kB → 121 kB (−45 kB)**. gsap chunks (61.9 kB + 51.4 kB)
+are now on-demand, fetched after hydration only where actually used.
+
+### 2. SmoothWavyCanvas — visual kept, loop gated
+
+Deliberately did **not** swap it for a CSS gradient: that changes the brand look on ~10
+routes and wasn't mine to decide unseen. The drawing code is untouched, so the effect is
+pixel-identical. Added to `SmoothWavyCanvas.tsx`:
+- `IntersectionObserver` (100px margin) — stops the rAF loop when scrolled off-screen.
+- `visibilitychange` — stops it in a background tab.
+- `prefers-reduced-motion` — never starts; paints one static frame instead, so the banner
+  is never a blank box. Reacts to live preference changes.
+
+Corrected from the earlier diagnosis: the mouse-interaction path is **not** dead code and
+was left alone. Only `PromotionBanner` wraps the canvas in `pointer-events-none`; the
+other six usages (5 policy pages + our-team) do receive mouse events.
+
+### Verified
+`tsc --noEmit` clean; production build passes; all public routes 200 and /404 returns 404;
+CSS keyframes + 3 `prefers-reduced-motion` blocks present in shipped CSS; all three canvas
+guards present in shipped JS.
+
+### Still open
+- Re-encoding storage originals (~700 KB PNGs) — biggest remaining win, operational.
+- 9 orphaned `temp_*` storage objects (3.4 MB) can be deleted.
+- framer-motion + gsap overlap (~235 kB) — real consolidation, deserves its own pass.
+- Lighthouse against a deployed build; the domain still isn't resolving.
+
+---
+
+## 2026-09-13 — Update mobile hero image asset
+
+**Status:** DONE
+
+Replaced `public/images/mobile images/mobile hero.jpeg` with an updated version
+(853x1844, portrait). Same filename/path, so no code changes needed —
+`src/app/(public)/page.tsx:146` already references this exact path for the mobile
+hero `<Image>`.
+
+### Verified
+- New file confirmed as valid JPEG at 853x1844.
+- Reference in `page.tsx` matches path/filename exactly, no other files reference
+  this image.
+
+---
+
+## 2026-09-13 — Fix first-load flicker (page paints, blanks, repaints)
+
+**Status:** DONE
+
+Reported symptom: on first load the site appears, goes blank/skeleton for a moment, then
+appears again. Not a network or font issue — the entire page tree was being mounted,
+torn down, and remounted.
+
+### Root cause chain
+
+1. `src/app/layout.tsx:45` — `<Suspense fallback={children}>` rendered the *same* `children`
+   tree in two different fiber slots (as the fallback, and inside `SmoothScrollGate`). React
+   cannot reuse DOM across slots, so resolving the boundary destroyed the whole page and
+   mounted a fresh copy. This is the literal "appears → blank → appears".
+   The boundary itself was needed (`SmoothScrollProvider` calls `useSearchParams`, which
+   suspends and broke the `/_not-found` prerender — see commit d795d98). The defect was
+   `fallback={children}`, not the boundary.
+2. `src/components/providers/SmoothScrollGate.tsx` — the whole page tree was a child of a
+   `dynamic(..., { ssr: false, loading: () => null })` component, so the page rendered
+   nothing until that chunk loaded. A second full-tree blank.
+3. `src/components/public/HomePageAnimator.tsx` — `gsap.from(..., { opacity: 0 })` against
+   already-painted SSR content: hero painted visible, hydration snapped it invisible, then
+   faded it back. A visible un-paint, re-fired after the remount from (1).
+
+Secondary: `PromotionBanner` started `dismissed=true` and popped in post-hydration,
+shifting the page down ~36px on every first load.
+
+### Changes
+- `src/app/layout.tsx` — removed the `<Suspense fallback={children}>` wrapper and its import.
+- `src/components/providers/SmoothScrollGate.tsx` — static import of the provider (dropped
+  `next/dynamic` / `ssr:false`); children render as a *sibling* of the provider, with the
+  Suspense boundary moved inside to wrap only the zero-DOM provider. Keeps the
+  `/_not-found` prerender fix without ever blanking children.
+- `src/components/providers/SmoothScrollProvider.tsx` — no longer takes `children`;
+  returns null. Side-effect-only. Both effects unchanged.
+- `src/styles/globals.css` — `.hero-text-anim { opacity: 0 }` so the hero never paints
+  visible first, plus a `prefers-reduced-motion` escape.
+- `src/components/public/HomePageAnimator.tsx` — hero text now `gsap.to` (animate *to*
+  visible) instead of `gsap.from`, wrapped in `gsap.matchMedia()` for reduced motion.
+  Scroll reveals and the double-rAF `ScrollTrigger.refresh()` left untouched.
+- `src/components/public/PromotionBanner.tsx` — initial state flipped to visible so it
+  renders on first paint; effect now only hides it if already dismissed this session.
+- `src/app/(public)/page.tsx` — wrapped `<PromotionBannerResolver />` in Suspense so its
+  Supabase query no longer blocks the page shell.
+
+### Verified
+- `npx tsc --noEmit` — clean.
+- `npm run build` — passes, 20/20 static pages. **`/_not-found` still prerenders as static
+  (○)**, so the `useSearchParams` CSR-bailout fix from d795d98 is intact. This was the main
+  regression risk of moving the Suspense boundary.
+- Production server smoke test — `/`, `/shop`, `/about-us`, `/community`, `/contact`,
+  `/our-team` all 200; unknown route correctly 404s. No bailout/hydration errors in the log.
+- Homepage SSR HTML contains the complete hero in a single pass (10 `.hero-text-anim`
+  nodes) with **no inline `opacity:0`** — CSS owns the initial state.
+- `.hero-text-anim{opacity:0}` and the `prefers-reduced-motion:reduce` override both ship in
+  `4496f54f2f9695b5.css`, loaded as a render-blocking `<link>` in `<head>` — so the hero is
+  hidden before first paint rather than painting then snapping out.
+
+Note: a first `npm run build` failed with `ENOENT functions-config-manifest.json` from a
+stale `.next`; `rm -rf .next` resolved it. Unrelated to these changes.
+
+### Still worth a human eye
+Visual confirmation under DevTools Slow 3G + 4x CPU throttle (single paint, no gray
+skeleton frame, no ~36px jump), and a pass with OS reduce-motion enabled.
+
+## 2026-09-13 — Performance quick wins: image pipeline + stray priority/sizes props
+
+**Status:** DONE
+
+Diagnosis of "product images load slowly / site is slow overall". Root cause found and
+verified empirically against the live Supabase bucket.
+
+### The core finding
+
+`supabaseImageUrl()` appends `?width=600&quality=70` to every product image URL. These
+params are **completely inert**. Verified with curl against the live bucket:
+
+| Request | Result |
+|---|---|
+| Raw original (no params) | 200 — 689,130 bytes, `image/png` |
+| With `?width=600&quality=70` | 200 — **689,130 bytes** (byte-identical) |
+| Real transform endpoint `/render/image/public/` | **403 `FeatureNotEnabled`** |
+
+Two reasons it never worked: (1) Supabase Image Transformations are a paid add-on not
+enabled on this project's plan, and (2) the stored URLs point at `/object/public/`, but
+transforms are only served from `/render/image/public/`. So Vercel's optimizer has been
+fetching full-size ~700 KB PNG originals from Supabase (Tokyo) on every cache miss.
+
+Storage state: 41 objects / 14 MB, 28 of them PNG, avg 361 KB, max 892 KB — product
+photography saved as PNG. 9 orphaned `temp_*` objects (3.4 MB) from the uploader.
+
+Compounding: `next.config.js` had no `minimumCacheTTL`, so it defaulted to **60 seconds**
+— past a minute idle, the next visitor re-pays the full ~700 KB fetch + AVIF encode.
+
+### Changes in this pass (safe, independent quick wins)
+- `next.config.js` — added `minimumCacheTTL: 31536000` (1 year; upload paths are
+  timestamped so they're unique per upload, making a long TTL safe) and a `qualities`
+  allowlist (Next 15 rejects non-default `quality` values not listed here; the codebase
+  uses 60/65/70/75/80).
+- `src/lib/supabase/imageUrl.ts` — **deleted**. The helper was a no-op that also
+  fragmented the `/_next/image` cache key, multiplying transform count for no benefit.
+- `src/components/public/ProductCard.tsx` (3 sites), `src/components/public/ShadeSelector.tsx`
+  (2 sites) — pass the raw Supabase URL straight to `next/image`; removed the import.
+- `src/app/(public)/page.tsx` — removed `priority` from the below-the-fold `lg:hidden`
+  "why us" mobile image, which was preloading and competing with the real hero LCP.
+- Missing `sizes` audit — **no change needed.** A script over every `<Image>` in `src/`
+  found 0 without a `sizes` prop; an earlier report was stale. CLAUDE.md non-negotiable
+  already satisfied.
+
+### Verified result
+
+Measured against a clean production build (`next start`), same source image:
+
+| | Bytes | Type |
+|---|---|---|
+| Before (what the browser actually received) | 689,130 | `image/png` |
+| After, `w=640` (shop grid, mobile) | 42,347 | `image/avif` |
+| After, `w=1080` (shop grid, 2x DPR) | 80,050 | `image/avif` |
+
+**~94% smaller at grid sizes.** Second request returns `X-Nextjs-Cache: HIT`, confirming
+`minimumCacheTTL` is preventing re-encodes. Full clean build passes, all routes 200,
+`tsc --noEmit` clean, no `qualities` warnings.
+
+Note: per Next docs, optimized-image expiry is `max(minimumCacheTTL, upstream
+Cache-Control)`. Supabase sends `max-age=3600`, so the 1-year floor governs. The
+`max-age=0, must-revalidate` seen on the browser-facing response is a `next start`
+artifact; Vercel's CDN sets its own headers for `/_next/image` in production.
+
+### Hero — resolved, no longer an issue
+`hero-bg.png` (437 KB) is gone from disk and `page.tsx:128` references
+`hero-bg.jpeg`, now 102 KB. The 4.8x LCP regression flagged during diagnosis no longer
+applies. No action taken.
+
+### Deferred — awaiting user decision
+- **Re-encoding the storage originals** (~700 KB PNG → ~100 KB WebP) — still the single
+  biggest remaining win. The optimizer now shields the browser from the 689 KB source,
+  but Vercel still fetches it from Supabase (Tokyo) on every cache miss, and it counts
+  against the free 5 GB egress cap. No code change; an operational pass over the bucket.
+  28 of 41 objects are PNG, avg 361 KB, max 892 KB. 9 orphaned `temp_*` objects (3.4 MB)
+  can be deleted outright.
+- **`SmoothWavyCanvas`** — uncapped rAF loop (~25k `Math.sqrt`/frame at 60fps) behind a
+  36px promo bar on ~10 routes, with no IntersectionObserver / reduced-motion /
+  visibility pause, and a dead mouse-interaction path that still computes. Awaiting
+  decision: replace with CSS gradient vs. add the missing guards.
+- **`CookieNotice.tsx`** statically imports gsap in the public layout, forcing gsap core
+  into the shared chunk on every route.
+
+### Next
+Lighthouse against a deployed build for real CWV numbers (domain not resolving yet), then
+the canvas + CookieNotice items above, which are the remaining site-wide wins.
+
+---
+
+## 2026-09-13 — Our Team page: bio modal on click + testimonial-style card gradient
+
+**Status:** DONE
+
+Cards are now sharp-cornered (`rounded-none`) and recolored from the glassmorphic
+`bg-white/30` treatment to the same gradient/border/shadow used on testimonial cards
+(`bg-gradient-to-br from-[#FFFBF9] to-[#FFF0EB]`, `border-burgundy/15`, matching shadow).
+Clicking a card opens a modal (dialog pattern based on `BuyNowModal.tsx`: fixed
+backdrop, ESC-to-close, body-scroll-lock) styled with the same gradient, showing the
+member's name, role, and bio. Bios provided for Anju Bajaj, Urvi Kanodia, and Komal
+Bajaj Bhotika; Shreshtha Ganguly's card is still clickable but shows "Bio coming soon."
+until her bio is provided (user's explicit choice).
+
+### Changes
+- `src/app/(public)/our-team/TeamSection.tsx`
+  - Added `bio` field to the `team` array (empty string for Shreshtha Ganguly).
+  - Card background changed to the testimonial gradient; corners already `rounded-none`.
+  - Added `selectedIndex` state + `onClick` per card, `useEffect` for ESC-to-close and
+    `document.body.style.overflow` lock while a modal is open.
+  - New `AnimatePresence`-wrapped modal at the bottom of the component, same gradient
+    background as the cards.
+
+---
+
+## 2026-09-13 — Our Team page: initials color + custom hover cursor
+
+**Status:** DONE
+
+Follow-up to the shared animated background change below.
+
+### Changes
+- `src/app/(public)/our-team/TeamSection.tsx`
+  - Initials circle background changed from `bg-burgundy` (on hover) / `bg-cream` (default)
+    to a flat `#7a0000` at all times, with cream text, so it doesn't flip color on hover.
+  - Added a custom circular cursor ("Click" label, `#7a0000` fill) that follows the mouse
+    and fades in via `framer-motion`/`AnimatePresence` while hovering any of the 4 team
+    cards, in addition to the native `cursor-pointer`.
+
+---
+
+## 2026-09-13 — Our Team page: shared animated background
+
+**Status:** DONE
+
+Reusing the existing `SmoothWavyCanvas` component (already used behind the Privacy
+Policy hero banner) as the background for the Our Team section, so both pages share
+the same animated flowing-lines backdrop. No changes to `SmoothWavyCanvas.tsx` itself.
+
+### Planned changes
+- `src/app/(public)/our-team/TeamSection.tsx` — add `SmoothWavyCanvas` (same
+  brand-rose/burgundy/cream color props as `PrivacyPolicyContent.tsx`) as an absolutely
+  positioned layer behind the existing heading + team grid, with content wrapped in
+  `relative z-10` to sit above it. Section stays `bg-cream` as a fallback paint.
+
+### Next
+- Implement, then visually verify on `/our-team` vs `/privacy-policy` and on mobile width.
+
+---
+
+## 2026-09-13 — Large-screen scale-up (1920x1080 / 2560x1440)
+
+**Status:** DONE
+
+The public site was structurally frozen at the `lg:` breakpoint (1024px). There were
+**zero** uses of `2xl:` anywhere in `src/`, containers capped at 1400/1440px, and every
+large `clamp()` font size saturated well before 1536px — the hero H1's
+`md:text-[clamp(4rem,9.5vw,6rem)]` stopped growing at a **1010px** viewport. Net effect:
+1920 and 2560 rendered identically to a 1024px laptop with ~560px of dead gutter per side.
+
+Approach: **moderate scale-up.** Container opens to 1600px at `2xl` (1536px+), font clamps
+extended to keep ramping to ~1600px, fixed-height heroes get a `2xl` step. No new `3xl` tier.
+Public site only — admin dashboard deliberately out of scope. Everything is `2xl:`-gated
+except the font clamps, so rendering at <=1536px is unchanged.
+
+### Changes
+
+1. **Container** — new `.site-container` utility in `src/styles/globals.css` (1440px base,
+   1600px at `min-width: 1536px`). Replaced `max-w-[1440px] mx-auto` / `max-w-[1400px] mx-auto`
+   across 14 files, unifying the 20px home-vs-shop jog. Padding stays at each call site.
+2. **Hero heights** — `h-[400px] md:h-[442px]` → `+ 2xl:h-[560px]` in all 8 places (real
+   component + 5 skeletons + about-us + community). Homepage bento `+ 2xl:h-[820px]`,
+   why-us `+ 2xl:h-[760px]`.
+3. **Grids** — shop grid `+ 2xl:grid-cols-4`; related/community/team wrappers
+   `+ 2xl:max-w-[1400px]`; team grid `+ 2xl:grid-cols-3`.
+4. **Type** — every original `clamp()` left **untouched**; a `2xl:text-[...]` step appended
+   instead, set to the value the ramp would reach at ~1600px (hero H1 `+ 2xl:text-[7.5rem]`,
+   shop hero `+ 2xl:text-[115px]`, section headings `+ 2xl:text-[48/56/64px]`, testimonial
+   headers `+ 2xl:text-[76/90px]`). Footer wordmark and PDP title got `2xl:` steps too.
+
+   *First attempt rewrote the clamps themselves (lowering the vw coefficient while raising
+   the ceiling). Arithmetic check across viewports showed that shrank type by up to 19px in
+   the 1024-1280px band — ordinary laptop sizes. Reverted; the `2xl:`-step approach keeps
+   every existing size byte-identical below 1536px, which is why all type work is now
+   `2xl:`-gated like the rest of this pass.*
+5. **Homepage hero composition** — `+ 2xl:pt-[22vh]` (fixed `lg:pt-[200px]` clustered the
+   copy into the upper third at 1440px tall) and `+ 2xl:max-w-[50%]` on the text column.
+6. **Image `sizes`** — corrected the vw values that over-declared above 1440 (product cards
+   asked for `33vw` = 845px at 2560 but render ~290px).
+7. **PDP chrome** — container `+ 2xl:max-w-[1400px]`, split `+ 2xl:w-[60%]` / `2xl:w-[40%]`.
+
+### Bugs found and fixed along the way (not screen-size related)
+
+- **Shop grid skeleton mismatch:** `shop/page.tsx` and `shop/loading.tsx` skeletons promised
+  `lg:grid-cols-4` while the real grid in `ShopClient.tsx` maxed at `md:grid-cols-3` — a
+  visible column snap on every shop page load. Real grid wins; skeletons matched to it.
+- **Four `<Image fill>` with no `sizes`** (`about-us/page.tsx` x2, `not-found.tsx` x2) —
+  violates CLAUDE.md "every `<Image>` must have a `sizes` attribute". Next defaults to
+  `100vw` and fetches the largest srcset candidate.
+- **`ShadeSelector.tsx` `min-h-[calc(100vh-80px)]`** — `100vh` breaks on mobile browsers
+  with dynamic toolbars (rest of the codebase uses `100dvh`), and `80px` matches no actual
+  navbar height (it is 50/60px). Now `min-h-[calc(100dvh-60px)]`.
+
+### Verified
+
+Measured with headless Chrome over the production build (no Playwright in this project),
+reading real computed geometry rather than just checking that classes exist:
+
+| viewport | `.site-container` | hero H1 | hero pad-top | shop grid | h-overflow |
+|---|---|---|---|---|---|
+| 1280 | 1265 (fills) | 96px | 200px | 3 col | 0 |
+| 1440 | 1425 (fills) | 96px | 200px | 3 col | 0 |
+| 1920 | **1600** (153px gutters) | **120px** | 238px | **4 col** | 0 |
+| 2560 | **1600** (473px gutters) | **120px** | **317px** | **4 col** | 0 |
+
+- **Overflow tested with `overflow-x: hidden` neutralised at runtime** (it otherwise masks
+  problems): 0px horizontal overflow at 390 / 768 / 1024 / 1280 / 1440 / 1920 / 2560.
+  The CSS rule itself was never edited.
+- **Regression pass** at 390 / 768 / 1024 / 1280 / 1440: hero H1 still 96px at 1024 and
+  1280, i.e. identical to before this change. Nothing below 1536px moved.
+- **`sizes` fix confirmed via network trace**: at 2560 the shop product cards now request
+  `_next/image?w=384` (matching their ~278px render) instead of ~1920. The only remaining
+  w=1920 requests are the two full-bleed shop hero backgrounds, which correctly use `100vw`.
+- Team grid 2 → 3 columns at 1920+. `npm run build` clean; all 20 routes generate.
+
+**Not done (deliberate):** the optional navbar height bump. It would need coordinated `2xl`
+variants in `not-found.tsx`, which hardcodes the 50/60px offset twice, for marginal gain.
+
+### Deviations flagged
+
+- **PDP layout is still a partial deviation from CLAUDE.md.** The spec (CLAUDE.md line 116)
+  says desktop `lg:grid-cols-[60%_40%]`; only `shop/[slug]/loading.tsx` does that. The live
+  `ShadeSelector` is a `flex` 55/45 split frozen at `md`. This pass nudges it to 60/40 at
+  `2xl` rather than rewriting flex→grid, which would be a riskier change than a responsive
+  pass warrants. The `md`-frozen flex split remains.
+
+### Follow-up noted, not done here
+
+- **Carousel arrow hit targets** in `CuratedCollectionCarousel.tsx` are 11px — a real
+  violation of CLAUDE.md's 44px touch-target minimum, but an a11y issue rather than a
+  wide-screen one. Left for a separate pass.
+
+---
+
+## 2026-09-13 — Zero border-radius on "Your Shade, Your Story" form
+
+**Status:** DONE
+
+Removed the last rounded corner from the community page's "Share Your Story" form.
+Inputs/textarea already used `rounded-none`; the button had no rounding class. Only
+the outer glass card wrapper still had `rounded-2xl`.
+
+- [src/app/(public)/community/CommunityClient.tsx](src/app/(public)/community/CommunityClient.tsx) —
+  outer form card: `rounded-2xl` → `rounded-none`
+
+---
+
+## 2026-09-08 — Glassmorphic navbar past the hero section
+
+**Status:** DONE
+
+Navbar now switches to a frosted-glass style once the page scrolls past one viewport
+height (matching the hero's `h-[100dvh]`), using the same glass recipe as the "Your
+Shade, Your Story." share-story form: `bg-white/30 backdrop-blur-sm border-white/40
+shadow-xl`. Below that threshold it keeps the existing solid `bg-cream/95` header.
+
+- [src/components/public/Navbar.tsx](src/components/public/Navbar.tsx) — added
+  `'use client'`, a `scroll` listener toggling `scrolledPastHero` state, and
+  conditional header classes
+
+**Component-rule deviation:** CLAUDE.md's Server/Client table lists Navbar as Server
+(no `'use client'`). Scroll-position tracking requires client-side state, so this
+converts it to a Client Component — matching `MobileNav` (a child of Navbar) which was
+already client, so no new JS bundle boundary is introduced. Flagging since it departs
+from the documented table; update the table if this should be the new baseline.
+
+Threshold is viewport-height-based rather than tied to a specific hero DOM element,
+since Navbar is shared across all public pages and only the homepage has the full-height
+hero — this keeps behavior consistent (glass appears once you've scrolled roughly one
+screen down) on every page rather than only working on `/`.
+
+---
+
+## 2026-09-08 — Reduce hero tagline font weight
+
+**Status:** DONE
+
+Reduced the font weight of "Inspired by nature, defined by" (hero tagline) per client
+request (~30% lighter). Was `font-medium` (500); moved to `font-normal` (400) — the
+nearest available step, since Inter is only loaded with weights 400/500/600/700
+(no 300) in [layout.tsx](src/app/layout.tsx), and 500 × 0.7 = 350 isn't a renderable
+weight. 400 is a ~20% reduction, the closest achievable to the requested 30% without
+adding a new font weight to the bundle.
+
+- [src/app/(public)/page.tsx](src/app/(public)/page.tsx) — line 166
+
+If a truer 30% cut (weight ~350) matters, Inter 300 would need to be added to the
+`weight` array in `layout.tsx` — flagging rather than silently loading an extra
+font-weight file without confirmation.
+
+---
+
+## 2026-09-08 — Justify "Why Inoya Rouge?" bullet body text
+
+**Status:** DONE
+
+Justified the body copy under each of the 5 "Why Inoya Rouge?" bullets (Skin-Friendly
+Formulas, Rich Pigmentation, Comfortable Wear, Cruelty Free Beauty, Modern Indian
+Elegance) per client request. Single shared paragraph element in the `whyBullets` map,
+so one edit applies to all 5.
+
+- [src/app/(public)/page.tsx](src/app/(public)/page.tsx) — line 500
+
+---
+
+## 2026-09-08 — Justify all testimonial body text
+
+**Status:** DONE
+
+Justified testimonial quote text (`t.content`) per client request, applied everywhere
+approved testimonials render publicly.
+
+- [src/components/public/TestimonialList.tsx](src/components/public/TestimonialList.tsx)
+  — line 48 (homepage "Loved By Our Community" ticker)
+- [src/app/(public)/community/CommunityClient.tsx](src/app/(public)/community/CommunityClient.tsx)
+  — line 103 (community page stories grid)
+
+---
+
+## 2026-09-08 — Hero tagline font: Inter instead of Playfair Display
+
+**Status:** DONE
+
+Changed "Inspired by nature, defined by" in the hero section from `font-display`
+(Playfair Display) to `font-sans` (Inter) per client request — editorial sans-serif
+tagline under the large Playfair "INOYA ROUGE" headline. The italic accent word
+"colour." keeps its `font-accent` (Playfair italic) styling as the flourish.
+
+- [src/app/(public)/page.tsx](src/app/(public)/page.tsx) — line 166
+
+---
+
+## 2026-09-08 — "Share Your Story" button color (Community page)
+
+**Status:** DONE
+
+Set the "Share Your Story" button background to `#7A0000` per client request. The
+`burgundy` Tailwind token was already `#7a0000` (same value, different case) — switched
+to the literal hex for consistency with other recent `#7A0000` color changes across the
+site.
+
+- [src/app/(public)/community/CommunityClient.tsx](src/app/(public)/community/CommunityClient.tsx)
+  — line 62
+
+---
+
+## 2026-09-08 — "Share Your Story." heading color (Community page)
+
+**Status:** DONE
+
+Changed both lines of the "Share Your" / "Story." heading on the community page to
+`#7A0000` per client request, replacing `text-burgundy-dark` (`#7d0000`) and
+`text-accent-pink` (`#b80049`).
+
+- [src/app/(public)/community/CommunityClient.tsx](src/app/(public)/community/CommunityClient.tsx)
+  — lines 149, 158
+
+---
+
+## 2026-09-08 — Justify homepage hero paragraph text
+
+**Status:** DONE
+
+Justified the "At Inoya Rouge, beauty is more than just color..." paragraph text per
+client request. Applied on desktop only (`md:text-justify`, replacing `md:text-left`) —
+mobile stays `text-center`, since justify only applies meaningfully to left-aligned text
+and justifying a narrow centered block tends to create uneven word gaps.
+
+- [src/app/(public)/page.tsx](src/app/(public)/page.tsx) — line 279
+
+---
+
+## 2026-09-08 — Fix letter/line spacing on homepage hero heading + paragraph
+
+**Status:** DONE
+
+Fixed inconsistent letter-spacing and line-height on the "Inoya Rouge — The Power of
+Nature in Every Rouge" heading and its paragraph. This was the only `font-display`
+heading on the homepage using `tracking-wide` (+0.025em) — every sibling heading
+(hero title, Explore Our Categories, Why Inoya Rouge?, Your Shade/Your Story) uses
+`tracking-tight` or near-zero tracking, so the loosened spacing read as a visual
+mismatch against the rest of the page. The paragraph had the same `tracking-wide`
+override while the page's other body paragraph (Why Inoya Rouge bullets) uses default
+tracking.
+
+- [src/app/(public)/page.tsx](src/app/(public)/page.tsx) — line 271 (heading:
+  `tracking-wide` → `tracking-tight`, `leading-[1.2]/[1.25]` → `leading-[1.15]/[1.2]`),
+  line 279 (paragraph: removed `tracking-wide` override, `leading-[1.5]` → `leading-[1.6]`
+  for readability now that tracking is normal)
+
+---
+
+## 2026-09-08 — "Loved By Our Community" heading color
+
+**Status:** DONE
+
+Changed the "Loved By Our Community" heading (above the testimonial list) from
+`text-accent-pink` (`#b80049`) to `#7A0000` per client request.
+
+- [src/components/public/TestimonialList.tsx](src/components/public/TestimonialList.tsx)
+  — line 24
+
+Left untouched: `text-accent-pink` on the community page's "Your Shade, Your Story."
+heading ([CommunityClient.tsx:158](src/app/(public)/community/CommunityClient.tsx#L158))
+— a different heading, out of scope for this request.
+
+---
+
+## 2026-09-08 — Footer background color
+
+**Status:** DONE
+
+Changed the site footer background from `bg-burgundy-red` (`#7a001e`) to `#7A0000` per
+client request.
+
+- [src/components/public/Footer.tsx](src/components/public/Footer.tsx) — line 47
+  (`<footer>` background)
+
+Left untouched: `burgundy-red` is also used as a hover text color on ProductCard titles
+([ProductCard.tsx:60](src/components/public/ProductCard.tsx#L60)) — unrelated to the
+footer, out of scope for this request.
+
+---
+
+## 2026-09-08 — "Your Shade, Your Story." heading color
+
+**Status:** DONE
+
+Changed both lines of the "Your Shade," / "Your Story." heading to `#7A0000` per client
+request, replacing the previous `text-burgundy-dark` (`#7d0000`) and `text-accent-pink`
+(`#b80049`) Tailwind classes with the literal hex on both lines.
+
+- [src/app/(public)/page.tsx](src/app/(public)/page.tsx) — lines 523, 526
+- [src/app/(public)/contact/ContactClient.tsx](src/app/(public)/contact/ContactClient.tsx)
+  — lines 182, 191 (identical section, duplicated on the contact page)
+
+---
+
+## 2026-09-08 — "Why Inoya Rouge?" section heading colors
+
+**Status:** DONE
+
+Changed all headings in the homepage "Why Inoya Rouge?" section from `#720B0B` to
+`#7A0000` per client request: the section heading (mobile + desktop) and all 5 bullet
+headings (Skin-Friendly Formulas, Rich Pigmentation, Comfortable Wear, Cruelty Free
+Beauty, Modern Indian Elegance).
+
+- [src/app/(public)/page.tsx](src/app/(public)/page.tsx) — lines 432, 476 (section
+  heading, mobile/desktop), 497 (bullet heading, shared across all 5 items via
+  `whyBullets` map)
+
+Scope note: `#720B0B` remains in many other places (admin UI, ProductCard, ShopClient
+collection pills, TrustBadges heading) — untouched as they're outside this section.
+
+---
+
+## 2026-09-08 — Homepage hero heading + About Us button color
+
+**Status:** DONE
+
+Changed the "Inoya Rouge — The Power of Nature in Every Rouge" heading and the ABOUT US
+button on the homepage hero from `#720B0B` to `#7A0000` per client request.
+
+- [src/app/(public)/page.tsx](src/app/(public)/page.tsx) — heading text color (line 271)
+  and ABOUT US button background (line 285)
+
+Left untouched: 3 other `#720B0B` headings further down the same file (Explore Our
+Categories, Bestsellers, product card titles) — out of scope for this request.
+
+---
+
+## 2026-09-08 — Fix fonts falling back to Arial / Times New Roman
+
+**Status:** DONE
+
+Text was rendering in Arial (body) and Times New Roman (headings) instead of Inter and
+Playfair Display, despite the font migration source changes being correct.
+
+**Root cause:** stale `.next` build output, not a source bug. The built
+`.next/static/css/app/layout.css` still *defined* the old `--font-display`,
+`--font-satoshi` and `--font-newsreader` variables while *consuming*
+`var(--font-playfair)` / `var(--font-inter)`. An undefined CSS custom property makes the
+whole `font-family` declaration invalid at computed-value time, so the declared
+`Georgia, serif` fallbacks were discarded too and the browser inherited its default. The
+only `@font-face` blocks with a resolvable source were the old fallback-metrics rules
+(`local("Arial")`, `local("Times New Roman")`) — exactly the fonts that appeared.
+
+A plain dev-server restart was not sufficient: the CSS had already been rebuilt ~13 hours
+after the source change and still emitted the old declarations, so the `next/font`
+artifacts cached in `.next` had to be cleared outright.
+
+Ruled out: the `next.config.js` CSP (`next/font` self-hosts woff2 under
+`/_next/static/media/`, already covered by `font-src 'self'`), missing/incorrect Tailwind
+font utilities, and any hardcoded `font-family` override in `src/`.
+
+- Cleared the `.next` build cache (gitignored — no source lost)
+- `public/fonts/agatho/` — deleted, no longer referenced after the `localFont` removal
+- `public/fonts/satoshi/` — deleted, same
+
+Left alone: `tailwind.config.ts` maps `display`, `serif` and `accent` to the identical
+Playfair stack. Harmless synonyms; migrating the 36 `font-serif` / `font-accent` call
+sites carries more regression risk than the naming confusion it would remove.
+
+**Next:** resume Phase 6 (deploy).
+
+---
+
+## 2026-09-08 — DISCOVER button hover fill color
+
+**Status:** DONE
+
+Changed the "curated" ProductCard's DISCOVER button hover sliding-background fill from
+`#7D0000` to `#7A0000` per client request, to match the trust badge burgundy.
+
+- [src/components/public/ProductCard.tsx](src/components/public/ProductCard.tsx) — curated variant hover fill
+
+---
+
+## 2026-09-08 — Trust badge color update
+
+**Status:** DONE
+
+Changed trust badge icon fill color from `#7A001E` to `#7A0000` per client request,
+applied to the `var(--fill-0, ...)` fallback color across all 7 badge SVGs (used by
+[TrustBadges.tsx](src/components/public/TrustBadges.tsx) and
+[TrustTicker.tsx](src/components/public/TrustTicker.tsx)).
+
+- `public/images/badges/cruelty-free.svg`
+- `public/images/badges/fda-approved.svg`
+- `public/images/badges/made-in-india.svg`
+- `public/images/badges/chemical-free.svg`
+- `public/images/badges/vitamin-e.svg`
+- `public/images/badges/paraben-free.svg`
+- `public/images/badges/vegan.svg`
+
+---
+
+## 2026-09-08 — Font migration: Playfair Display + Inter
+
+**Status:** DONE
+
+Client-approved re-application of the font change from the reverted 2026-09-07 redesign —
+fonts only, none of the colour/spacing/token work from that redesign.
+
+Swapping the three-family setup (Agatho display / Satoshi sans / Newsreader accent) to
+Playfair Display (headings, display, accent) + Inter (body). Both load via `next/font/google`,
+replacing the two `localFont` calls.
+
+Done at the config layer so the 35 files using `font-display` / `font-accent` / `font-serif` /
+`font-sans` need no edits: all four families remap in `tailwind.config.ts` onto the two new
+CSS variables. This also closes the open `font-serif` bug — it named `Playfair Display` with
+nothing loading it, so ~24 usages silently fell back to Georgia.
+
+- [src/app/layout.tsx](src/app/layout.tsx) — font loaders + body variable classes
+- [tailwind.config.ts](tailwind.config.ts) — `fontFamily` remap
+- [src/components/public/ProductCard.tsx](src/components/public/ProductCard.tsx) — stale "agatho" comment
+
+Verified: `tsc --noEmit` clean; `next build` green on all routes; built CSS resolves
+`--font-playfair` / `--font-inter` and both families are self-hosted by `next/font`.
+No references to Agatho / Satoshi / Newsreader remain in `src/`.
+
+Note: the Agatho and Satoshi `.woff2` files under `public/fonts/` are now unused but were
+left in place — deleting them is a separate call, and they'd be needed to revert.
+
+Still open (untouched, from the reverted redesign): `no-scrollbar` (ShadeSelector) and
+`animate-fade-in` (CommunityStoryForm) are used in markup but defined nowhere.
+
 ## 2026-09-07 — Site-wide redesign against `src/design.md`, then REVERTED
 
 **Status:** REVERTED — no code from this work remains in the repo.

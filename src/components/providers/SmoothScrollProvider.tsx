@@ -9,7 +9,7 @@ import { setLenis } from '@/lib/lenis'
 
 gsap.registerPlugin(ScrollTrigger)
 
-export default function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
+export default function SmoothScrollProvider() {
   const lenisRef = useRef<Lenis | null>(null)
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -66,5 +66,5 @@ export default function SmoothScrollProvider({ children }: { children: React.Rea
     ScrollTrigger.refresh()
   }, [pathname, searchParams])
 
-  return <>{children}</>
+  return null
 }
