@@ -1,3 +1,53 @@
+## 2026-09-14 — Update mobile hero image asset (3rd time) + fix stale-crop/cache issue
+
+**Status:** DONE
+
+Replaced `public/images/mobile images/mobile hero.jpeg` with another updated
+version (835x1884, portrait, 75KB). Same filename/path as before, so no code
+changes needed for the swap itself — `src/app/(public)/page.tsx:141` already
+references this exact path for the mobile hero `<Image>`.
+
+Also changed the mobile hero's `object-center` to `object-top` (line 146) so
+`object-cover` anchors from the top of the source image (where the empty
+space for the headline text is) instead of centering the crop.
+
+**Root cause of "image looks too zoomed in":** not a CSS/crop bug — Next.js's
+image optimizer caches transformed output in `.next/cache/images` keyed by
+the source URL, not file content. Since the filename didn't change, the dev
+server kept serving the previously-cached (old) rendition even after the file
+on disk was replaced. Deleted `.next/cache/images` to force regeneration;
+confirmed via a fresh Playwright screenshot at a 390x844 viewport that the
+new image now renders correctly with `object-top`.
+
+**Note for next time:** any future same-filename image replacement will hit
+this same stale-cache issue in local dev. Clear `.next/cache/images` (or
+restart `next dev`) after swapping an image asset in place.
+
+### Files touched
+- `public/images/mobile images/mobile hero.jpeg` — new image asset
+- `src/app/(public)/page.tsx` — `object-center` → `object-top` on mobile hero
+
+### Verified
+- New file confirmed as valid JPEG at 835x1884.
+- Screenshot at 390x844 mobile viewport confirms correct, non-stale render.
+
+---
+
+## 2026-09-14 — Remove hero zoom animation on mobile (was cropping the image)
+
+**Status:** DONE
+
+`.hero-image-zoom-anim` (in `HomePageAnimator.tsx`) does `gsap.from(scale: 1.15 -> 1)`
+on load. With `object-cover` already filling the container, starting at 1.15x pushed
+part of the mobile hero image outside the visible frame during the animation. Removed
+the class from the mobile `<Image>` in `src/app/(public)/page.tsx:146` only — desktop
+keeps the zoom-out effect since its wider viewport doesn't show the same cropping issue.
+
+### Files touched
+- `src/app/(public)/page.tsx` — dropped `hero-image-zoom-anim` from mobile hero image
+
+---
+
 ## 2026-09-14 — Update mobile hero image asset (again)
 
 **Status:** DONE

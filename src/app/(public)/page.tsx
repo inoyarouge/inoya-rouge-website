@@ -143,7 +143,7 @@ export default function HomePage() {
           fill
           loading="eager"
           quality={80}
-          className="hero-image-zoom-anim md:hidden object-cover object-center saturate-[.95]"
+          className="md:hidden object-cover object-top saturate-[.95]"
           sizes="100vw"
         />
         <div className="absolute inset-0 flex flex-col items-center md:items-start text-center md:text-left pt-[100px] md:pt-[160px] lg:pt-[200px] 2xl:pt-[22vh] pb-8 md:pb-0 px-6 md:px-16 lg:px-[100px] xl:px-[140px] site-container w-full justify-between md:justify-start">
