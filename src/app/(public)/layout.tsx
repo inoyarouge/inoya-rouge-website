@@ -11,7 +11,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <NavigationProgress />
       </Suspense>
       <Navbar />
-      <main className="min-h-screen">{children}</main>
+      {/* pt reserves space for the fixed 50/60px Navbar, which is out of flow. This lived
+          on PromotionBanner before, so pages lost their clearance whenever no promotion was
+          live and content slid under the bar. Sections that are meant to run full-bleed
+          under the navbar (the homepage hero) opt out with -mt-[50px] md:-mt-[60px]. */}
+      <main className="min-h-screen pt-[50px] md:pt-[60px]">{children}</main>
       <Footer />
       <CookieNotice />
     </>

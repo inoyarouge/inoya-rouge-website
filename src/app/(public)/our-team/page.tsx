@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function OurTeamPage() {
   return (
-    <div className="bg-cream min-h-screen pt-[50px] md:pt-[60px]">
+    <div className="bg-cream min-h-screen">
       <TeamSection />
     </div>
   )

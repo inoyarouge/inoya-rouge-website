@@ -125,7 +125,9 @@ export default function HomePage() {
       </Suspense>
       <HomePageAnimatorGate />
       {/* 1. Hero Section */}
-      <section className="relative w-full h-[100dvh] overflow-hidden bg-[#eaddd6]">
+      {/* Full-bleed: cancels the layout's navbar padding so the hero runs under the
+          translucent bar by design, then reclaims the height it gave up. */}
+      <section className="relative w-full h-[100dvh] -mt-[50px] md:-mt-[60px] overflow-hidden bg-[#eaddd6]">
         {/* Desktop Image */}
         <Image
           src="/images/hero/hero-bg.jpeg"

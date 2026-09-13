@@ -16,6 +16,8 @@ export default function NotFound() {
       </Suspense>
       <Navbar />
 
+      {/* This route renders its own Navbar and is outside the (public) layout, so it
+          reserves the fixed navbar's height itself. */}
       <main className="relative w-full bg-cream flex flex-col justify-center items-center px-6 md:px-16 lg:px-[100px] xl:px-[140px] mt-[50px] md:mt-[60px]" style={{ minHeight: 'calc(100dvh - 60px)' }}>
         {/* Global Noise Overlay */}
         <div className="pointer-events-none fixed inset-0 z-[9999] opacity-[0.03]">
