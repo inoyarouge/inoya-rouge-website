@@ -198,7 +198,7 @@ export default function ShopClient({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className={`font-sans tracking-tight text-[clamp(20px,3.2vw,30px)] leading-[1.2] mt-4 md:mt-3 max-w-[500px] whitespace-pre-line md:whitespace-normal ${currentHero.theme === 'dark' ? 'text-white' : 'max-md:text-white text-charcoal'}`}
+              className={`font-sans tracking-tight text-[clamp(20px,3.2vw,30px)] leading-[1.2] mt-4 md:mt-3 max-w-[500px] whitespace-pre-line md:whitespace-normal max-md:[text-shadow:0_1px_3px_rgba(0,0,0,0.25)] ${currentHero.theme === 'dark' ? 'text-white' : 'max-md:text-white text-charcoal'}`}
             >
               {currentHero.subtitle}
             </motion.p>

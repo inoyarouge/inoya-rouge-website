@@ -1,3 +1,19 @@
+## 2026-09-14 — Subtle text-shadow on shop banner subtext (mobile only)
+
+**Status:** DONE
+
+Added a very subtle text-shadow (`0 1px 3px rgba(0,0,0,0.25)`) to the shop
+page hero subtitle only on small screens (`max-md:`), improving legibility
+over the background photo for all four category banners (All/Lips/Eyes/Face
+— "Beauty should never come...", "Color that speaks...", "Define. Dazzle.
+Dominate", "Naturally Luxe. Perfectly You"). Applied only to the subtitle
+`<p>`, not the `<h1>` heading, and only below `md`.
+
+### Files touched
+- `src/components/public/ShopClient.tsx`
+
+---
+
 ## 2026-09-14 — Change Ms. Shreshtha Ganguly's displayed role
 
 **Status:** DONE
