@@ -11,6 +11,11 @@ export const revalidate = 1800
 export const metadata: Metadata = {
   title: 'Lips | Inoya Rouge',
   description: 'Shop our luxury lip collection — bold colours, lasting care.',
+  openGraph: {
+    title: 'Lips | Inoya Rouge',
+    description: 'Shop our luxury lip collection — bold colours, lasting care.',
+    url: '/shop/lips',
+  },
 }
 
 function ShopSkeleton() {

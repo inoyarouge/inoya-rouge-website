@@ -11,6 +11,11 @@ export const revalidate = 1800
 export const metadata: Metadata = {
   title: 'Eyes | Inoya Rouge',
   description: 'Define and dazzle with our luxury eye collection.',
+  openGraph: {
+    title: 'Eyes | Inoya Rouge',
+    description: 'Define and dazzle with our luxury eye collection.',
+    url: '/shop/eyes',
+  },
 }
 
 function ShopSkeleton() {

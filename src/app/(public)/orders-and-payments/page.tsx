@@ -7,6 +7,11 @@ export const revalidate = false
 export const metadata: Metadata = {
     title: 'Orders and Payments | Inoya Rouge',
     description: 'Inoya Rouge Orders and Payments. Information on order processing and secure payment methods.',
+    openGraph: {
+        title: 'Orders and Payments | Inoya Rouge',
+        description: 'Inoya Rouge Orders and Payments. Information on order processing and secure payment methods.',
+        url: '/orders-and-payments',
+    },
 }
 
 export default function OrdersAndPaymentsPage() {

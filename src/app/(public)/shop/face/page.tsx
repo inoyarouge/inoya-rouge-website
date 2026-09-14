@@ -11,6 +11,11 @@ export const revalidate = 1800
 export const metadata: Metadata = {
   title: 'Face | Inoya Rouge',
   description: 'Naturally luxe face products — perfectly you.',
+  openGraph: {
+    title: 'Face | Inoya Rouge',
+    description: 'Naturally luxe face products — perfectly you.',
+    url: '/shop/face',
+  },
 }
 
 function ShopSkeleton() {

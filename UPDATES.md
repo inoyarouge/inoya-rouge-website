@@ -1,3 +1,44 @@
+## 2026-09-15 — SEO foundation: sitemap, robots.txt, Open Graph metadata
+
+**Status:** DONE
+
+Added baseline SEO infrastructure that was entirely missing: no `sitemap.xml`,
+no `robots.txt`, no Open Graph/Twitter Card tags anywhere. Domain confirmed
+by user as `https://www.inoya.in` (note: differs from `inoyarouge.com` named
+in this file's own header — that header is stale).
+
+Google Search Console / Bing Webmaster Tools verification and IndexNow are
+external/manual steps and out of scope for this pass (IndexNow skipped by
+user's choice; GSC/Bing need the user's own dashboard login). Root layout
+does support an optional `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` env var —
+once the user gets a verification code from Search Console, dropping it into
+`.env.local`/Vercel env and redeploying is all that's needed, no further
+code change.
+
+`/shop/[slug]` OG image now pulls the product's first variant image straight
+from Supabase storage (falls back to the hero image if a product has none).
+Verified via local `next build` + `next start`: `/sitemap.xml` lists all
+static routes plus every active product slug, `/robots.txt` disallows
+`/admin/`, and `curl`'d OG tags on both the homepage and a product page
+resolved correctly.
+
+### Files touched
+- `src/lib/constants.ts` (new) — `SITE_URL` single source of truth
+- `src/app/sitemap.ts` (new) — static routes + dynamic product slugs from Supabase
+- `src/app/robots.ts` (new) — allow all, disallow `/admin/`, reference sitemap
+- `src/app/layout.tsx` — `metadataBase`, root `openGraph`/`twitter` fallback, optional Google site verification env var
+- `src/app/(public)/page.tsx` — added `metadata` export (had none)
+- `src/app/(public)/shop/page.tsx`, `shop/lips`, `shop/eyes`, `shop/face` — extended existing `metadata` with `openGraph`
+- `src/app/(public)/shop/[slug]/page.tsx` — extended `generateMetadata` with product image OG
+- `src/app/(public)/about-us/page.tsx`, `our-team/page.tsx`, `community/page.tsx`, `contact/page.tsx`, `privacy-policy/page.tsx`, `returns-and-refunds/page.tsx`, `shipping-and-delivery/page.tsx`, `orders-and-payments/page.tsx`, `product-information/page.tsx` — added `openGraph` to existing `metadata`
+
+### What's still manual (see plan.md "What Claude Code Does NOT Do")
+- Verify site in Google Search Console (HTML tag method) → paste code into `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`
+- Verify in Bing Webmaster Tools (can import directly from GSC — simpler than a separate meta tag)
+- Submit `https://www.inoya.in/sitemap.xml` in both consoles once deployed
+
+---
+
 ## 2026-09-14 — Nested collection dropdowns in shop sidebar + collection-name product eyebrow
 
 **Status:** DONE

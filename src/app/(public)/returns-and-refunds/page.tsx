@@ -7,6 +7,11 @@ export const revalidate = false
 export const metadata: Metadata = {
     title: 'Returns & Refunds | Inoya Rouge',
     description: 'Inoya Rouge Returns and Refunds policy. Learn about our conditions for returns, exchanges, and refund process.',
+    openGraph: {
+        title: 'Returns & Refunds | Inoya Rouge',
+        description: 'Inoya Rouge Returns and Refunds policy. Learn about our conditions for returns, exchanges, and refund process.',
+        url: '/returns-and-refunds',
+    },
 }
 
 export default function ReturnsRefundsPage() {

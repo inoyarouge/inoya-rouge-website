@@ -47,9 +47,26 @@ export async function generateMetadata({
   const { slug } = await params
   const product = await getProductBySlug(slug)
 
+  const title = product ? `${product.name} | Inoya Rouge` : 'Product | Inoya Rouge'
+  const description = product?.description ?? 'Shop Inoya Rouge luxury cosmetics'
+
+  const variants = (product?.product_variants ?? []) as (ProductVariant & {
+    variant_images?: VariantImage[]
+  })[]
+  const firstImage = variants
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .flatMap((v) => (v.variant_images ?? []).slice().sort((a, b) => a.sort_order - b.sort_order))[0]?.url
+
   return {
-    title: product ? `${product.name} | Inoya Rouge` : 'Product | Inoya Rouge',
-    description: product?.description ?? 'Shop Inoya Rouge luxury cosmetics',
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/shop/${slug}`,
+      images: [firstImage ?? '/images/hero/hero-bg.jpeg'],
+    },
   }
 }
 

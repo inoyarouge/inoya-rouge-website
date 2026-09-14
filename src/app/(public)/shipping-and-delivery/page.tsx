@@ -7,6 +7,11 @@ export const revalidate = false
 export const metadata: Metadata = {
     title: 'Shipping & Delivery | Inoya Rouge',
     description: 'Inoya Rouge Shipping and Delivery information. Learn about our delivery timelines, charges, and process.',
+    openGraph: {
+        title: 'Shipping & Delivery | Inoya Rouge',
+        description: 'Inoya Rouge Shipping and Delivery information. Learn about our delivery timelines, charges, and process.',
+        url: '/shipping-and-delivery',
+    },
 }
 
 export default function ShippingDeliveryPage() {

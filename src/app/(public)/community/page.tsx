@@ -9,6 +9,11 @@ export const revalidate = 300
 export const metadata: Metadata = {
   title: 'Community | Inoya Rouge',
   description: 'Read stories from Inoya Rouge customers. Share your own story with our community.',
+  openGraph: {
+    title: 'Community | Inoya Rouge',
+    description: 'Read stories from Inoya Rouge customers. Share your own story with our community.',
+    url: '/community',
+  },
 }
 
 export default async function CommunityPage() {

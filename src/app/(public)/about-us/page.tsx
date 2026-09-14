@@ -11,6 +11,12 @@ export const metadata: Metadata = {
   title: 'About Us | Inoya Rouge',
   description:
     'Discover Inoya Rouge — an Indian luxury cosmetics brand blending heritage, nature, and modern innovation. Crafted with precision, made for every shade of you.',
+  openGraph: {
+    title: 'About Us | Inoya Rouge',
+    description:
+      'Discover Inoya Rouge — an Indian luxury cosmetics brand blending heritage, nature, and modern innovation. Crafted with precision, made for every shade of you.',
+    url: '/about-us',
+  },
 }
 
 // TODO: replace with section-specific imagery once brand finals are supplied.

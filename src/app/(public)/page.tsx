@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createPublicClient } from '@/lib/supabase/public'
@@ -12,6 +13,16 @@ import type { Product, ProductVariant, Discount, VariantImage } from '@/lib/type
 import { normalizeDiscount } from '@/lib/pricing'
 
 export const revalidate = 3600
+
+export const metadata: Metadata = {
+  title: 'Inoya Rouge | Indian Luxury Cosmetics',
+  description: 'Inspired by Nature, Defined by Color — shop Inoya Rouge luxury cosmetics for lips, eyes, and face.',
+  openGraph: {
+    title: 'Inoya Rouge | Indian Luxury Cosmetics',
+    description: 'Inspired by Nature, Defined by Color — shop Inoya Rouge luxury cosmetics for lips, eyes, and face.',
+    url: '/',
+  },
+}
 
 // --- Skeleton fallbacks ---
 

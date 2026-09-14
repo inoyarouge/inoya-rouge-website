@@ -9,6 +9,11 @@ export const revalidate = false
 export const metadata: Metadata = {
   title: 'Contact Us | Inoya Rouge',
   description: 'Get in touch with Inoya Rouge. Phone, email, and social media contact information.',
+  openGraph: {
+    title: 'Contact Us | Inoya Rouge',
+    description: 'Get in touch with Inoya Rouge. Phone, email, and social media contact information.',
+    url: '/contact',
+  },
 }
 
 export default function ContactPage() {

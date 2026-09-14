@@ -12,6 +12,12 @@ export const metadata: Metadata = {
   title: 'Shop | Inoya Rouge',
   description:
     'Explore our collections of Indian luxury cosmetics — Lips, Eyes, and Face.',
+  openGraph: {
+    title: 'Shop | Inoya Rouge',
+    description:
+      'Explore our collections of Indian luxury cosmetics — Lips, Eyes, and Face.',
+    url: '/shop',
+  },
 }
 
 function SkeletonGrid() {
