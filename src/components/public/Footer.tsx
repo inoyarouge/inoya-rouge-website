@@ -77,10 +77,10 @@ export default function Footer() {
           <FooterColumn heading="FINE PRINT" links={legalLinks} className="lg:col-span-1" />
         </div>
 
-        {/* Divider + Copyright */}
+        {/* Divider */}
         <div className="border-t border-white/20 mt-16 sm:mt-20 pt-7 sm:pt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="font-display text-[12px] sm:text-[13px] tracking-[3px] sm:tracking-[4px] text-white/50 text-center sm:text-left">
-            &copy; {new Date().getFullYear()} INOYA ROUGE
+            {new Date().getFullYear()} INOYA ROUGE
           </p>
           <p className="font-display text-[12px] sm:text-[13px] tracking-[3px] text-white/40 text-center sm:text-right">
             REFINED BEAUTY
