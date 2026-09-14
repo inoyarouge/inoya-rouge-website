@@ -22,8 +22,8 @@ const team = [
   },
   {
     name: "Ms. Shreshtha Ganguly",
-    role: "Digital Media Head",
-    bio: "",
+    role: "Part of the team",
+    bio: "Part of the team",
   },
 ]
 
@@ -89,6 +89,8 @@ export default function TeamSection() {
               .join("")
               .slice(0, 2);
 
+            const isClickable = member.name !== "Ms. Shreshtha Ganguly";
+
             return (
               <motion.div
                 key={member.name}
@@ -100,16 +102,16 @@ export default function TeamSection() {
                   delay: index * 0.15,
                   ease: [0.16, 1, 0.3, 1]
                 }}
-                onMouseEnter={() => setIsHoveringCard(true)}
-                onMouseLeave={() => setIsHoveringCard(false)}
-                onMouseMove={(e) => setCursorPos({ x: e.clientX, y: e.clientY })}
-                onClick={() => setSelectedIndex(index)}
-                className="group bg-gradient-to-br from-[#FFFBF9] to-[#FFF0EB] rounded-none p-6 md:p-8 flex items-center shadow-[0_8px_40px_-4px_rgba(114,11,11,0.08)] border border-burgundy/15 hover:shadow-[0_16px_50px_-4px_rgba(114,11,11,0.12)] hover:-translate-y-2 transition-all duration-500 ease-out cursor-pointer"
+                onMouseEnter={() => isClickable && setIsHoveringCard(true)}
+                onMouseLeave={() => isClickable && setIsHoveringCard(false)}
+                onMouseMove={(e) => isClickable && setCursorPos({ x: e.clientX, y: e.clientY })}
+                onClick={() => isClickable && setSelectedIndex(index)}
+                className={`${isClickable ? "group" : ""} bg-gradient-to-br from-[#FFFBF9] to-[#FFF0EB] rounded-none p-6 md:p-8 flex items-center shadow-[0_8px_40px_-4px_rgba(114,11,11,0.08)] border border-burgundy/15 transition-all duration-500 ease-out ${isClickable ? "hover:shadow-[0_16px_50px_-4px_rgba(114,11,11,0.12)] hover:-translate-y-2 cursor-pointer" : "cursor-default"}`}
               >
                 <div className="w-20 h-20 md:w-24 md:h-24 shrink-0 rounded-full bg-[#7a0000] flex items-center justify-center font-display text-2xl md:text-3xl text-cream font-medium group-hover:scale-110 transition-all duration-500 ease-out shadow-inner">
                   {initials}
                 </div>
-                
+
                 <div className="ml-6 flex flex-col">
                   <h3 className="font-display text-burgundy text-xl md:text-2xl font-semibold group-hover:translate-x-1 transition-transform duration-500 ease-out">
                     {member.name}

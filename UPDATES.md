@@ -1,3 +1,41 @@
+## 2026-09-14 — Change Ms. Shreshtha Ganguly's displayed role
+
+**Status:** DONE
+
+Changed her role label (shown on the card, under her name) from "Digital
+Media Head" to "Part of the team", matching her bio text.
+
+### Files touched
+- `src/app/(public)/our-team/TeamSection.tsx`
+
+---
+
+## 2026-09-14 — Make Ms. Shreshtha Ganguly's team card unclickable
+
+**Status:** DONE
+
+Only her card no longer opens the bio modal on click — other team cards are
+unaffected. Guarded the click/hover handlers with an `isClickable` check
+(name-based) and dropped the `group` class + hover lift/shadow styles on her
+card so no hover-driven affordance implies it's interactive.
+
+### Files touched
+- `src/app/(public)/our-team/TeamSection.tsx`
+
+---
+
+## 2026-09-14 — Set Ms. Shreshtha Ganguly's team bio
+
+**Status:** DONE
+
+Her bio was empty in the team data, so the modal fell back to "Bio coming
+soon." Set it to "Part of the team" per request.
+
+### Files touched
+- `src/app/(public)/our-team/TeamSection.tsx`
+
+---
+
 ## 2026-09-14 — Replace contact email site-wide
 
 **Status:** DONE
