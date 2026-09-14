@@ -58,7 +58,7 @@ export default function Footer() {
             </p>
             <div className="flex gap-6 items-center mt-8 sm:mt-10">
               <FooterShareButton />
-              <a href="mailto:inoyarouge@gmail.com" aria-label="Email" className="relative w-[22px] h-[17px] block">
+              <a href="mailto:customercare@inoya.in" aria-label="Email" className="relative w-[22px] h-[17px] block">
                 <Image src="/images/icons/mail.svg" alt="Email" fill sizes="22px" className="object-contain opacity-60 hover:opacity-100 transition-opacity duration-300" />
               </a>
               <a href="https://www.instagram.com/inoyarouge/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="opacity-60 hover:opacity-100 transition-opacity duration-300 text-white flex items-center justify-center">

@@ -299,7 +299,7 @@ USING (
 
 #### `/contact` — Contact Page
 - **Rendering:** SSG (fully static)
-- Contact cards: Phone (9836048717, Mon-Sat 10AM-8PM), Email (inoyarouge@gmail.com), Social (Instagram handle — pending)
+- Contact cards: Phone (9836048717, Mon-Sat 10AM-8PM), Email (customercare@inoya.in), Social (Instagram handle — pending)
 - Optional: simple enquiry form
 - **Data:** none — static content
 

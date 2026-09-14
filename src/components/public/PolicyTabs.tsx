@@ -29,7 +29,7 @@ const content: Record<TabKey, { heading: string; sections: { title: string; body
       },
       {
         title: 'Contact',
-        body: 'For any privacy-related concerns, please contact us at inoyarouge@gmail.com.',
+        body: 'For any privacy-related concerns, please contact us at customercare@inoya.in.',
       },
     ],
   },
@@ -84,7 +84,7 @@ const content: Record<TabKey, { heading: string; sections: { title: string; body
       },
       {
         title: 'How to Request a Return',
-        body: 'Contact us at inoyarouge@gmail.com with your order number and photos of the damaged/defective product. Our team will review your request within 48 hours.',
+        body: 'Contact us at customercare@inoya.in with your order number and photos of the damaged/defective product. Our team will review your request within 48 hours.',
       },
       {
         title: 'Refund Process',

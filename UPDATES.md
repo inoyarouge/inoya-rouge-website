@@ -1,3 +1,75 @@
+## 2026-09-14 — Replace contact email site-wide
+
+**Status:** DONE
+
+Swapped every `inoyarouge@gmail.com` reference for `customercare@inoya.in`
+across the public site (contact page card + CTA link, footer email icon,
+returns/refunds contact link, privacy policy contact link, and the two
+PolicyTabs body copy mentions). Also updated the email in `plan.md`'s
+contact-card spec for consistency.
+
+### Files touched
+- `src/app/(public)/contact/ContactClient.tsx`
+- `src/components/public/Footer.tsx`
+- `src/components/public/ReturnsRefundsContent.tsx`
+- `src/components/public/PrivacyPolicyContent.tsx`
+- `src/components/public/PolicyTabs.tsx`
+- `plan.md`
+
+### Verified
+- `grep` for `inoyarouge@gmail.com` under `src/` returns no matches.
+
+---
+
+## 2026-09-14 — Fix content sliding under the fixed navbar on small screens
+
+**Status:** DONE
+
+Reported: on a phone, the top of the product image on the PDP sits behind the menu bar.
+
+### Cause
+
+`Navbar` is `position: fixed` at `h-[50px] md:h-[60px]`, so it is out of flow and pages must
+reserve that height themselves. Nothing did — `(public)/layout.tsx` had a bare
+`<main className="min-h-screen">`. The clearance was actually coming from
+`PromotionBanner`'s `mt-[50px] md:mt-[60px]`, so pages were only correctly spaced **when a
+promotion happened to be live**. With no active promo, `PromotionBannerResolver` returns
+`null` and the clearance disappeared with it.
+
+On the PDP this exposed the gap: `ShadeSelector` has `py-8` (32px) on mobile against a 50px
+navbar, so ~18px of the product image was hidden behind the bar — matching the screenshot.
+
+### Fix — reserve the space once, in the layout
+
+- `src/app/(public)/layout.tsx` — `<main>` now carries `pt-[50px] md:pt-[60px]`. Single
+  source of truth for navbar clearance; no longer contingent on a promotion existing.
+- `src/components/public/PromotionBanner.tsx` — dropped its `mt-[50px] md:mt-[60px]`, which
+  would now double up.
+- `src/app/(public)/our-team/page.tsx` — dropped its own `pt-[50px] md:pt-[60px]`, same reason.
+- `src/app/(public)/page.tsx` — the homepage hero is *meant* to run full-bleed under the
+  translucent bar, so it opts out with `-mt-[50px] md:-mt-[60px]` on the `h-[100dvh]` section,
+  cancelling the layout padding and reclaiming the height.
+- `src/app/not-found.tsx` — **kept** its `mt-[50px] md:mt-[60px]`. This route renders its own
+  `<Navbar>` and sits outside the `(public)` layout, so it does not receive the new padding.
+  (Removed it first, then restored it on noticing that.)
+
+### Verified
+- `npx tsc --noEmit` clean; `npm run build` passes, 20/20 static pages.
+- Production smoke test: `/`, `/shop`, `/shop/zyra-aura`, `/about-us`, `/community`,
+  `/contact`, `/our-team` all 200; unknown route 404s. Zero server-log errors.
+- Arithmetic confirmed in source: `<main>` reserves exactly the navbar height, so the PDP's
+  `py-8` is now clear space *below* the bar rather than the entire offset.
+
+### Note on verification method
+Attempted automated geometry measurement with Playwright; it proved unreliable here because
+Lenis applies a transform to the scroll container and GSAP animates on entry, so
+`getBoundingClientRect()` returned meaningless values (`mainTop=3308` on an 800px viewport,
+zero fixed elements found) and screenshots captured mid-animation. Verification fell back to
+build + route health + reading the computed class arithmetic.
+
+**Worth a human eye:** visual confirmation on a real phone that the PDP image now clears the
+bar, and that the homepage hero still reaches the top edge full-bleed.
+
 ## 2026-09-14 — Update mobile hero image asset (3rd time) + fix stale-crop/cache issue
 
 **Status:** DONE

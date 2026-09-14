@@ -35,8 +35,8 @@ const contacts = [
     },
     {
         label: 'Email',
-        value: 'inoyarouge@gmail.com',
-        href: 'mailto:inoyarouge@gmail.com',
+        value: 'customercare@inoya.in',
+        href: 'mailto:customercare@inoya.in',
         note: 'We typically respond within 24 hours',
         icon: <Mail className="w-6 h-6" strokeWidth={1.5} />,
     },
@@ -111,7 +111,7 @@ export default function ContactClient({
                             className="mt-8"
                         >
                             <Link
-                                href="mailto:inoyarouge@gmail.com"
+                                href="mailto:customercare@inoya.in"
                                 className="group/btn relative overflow-hidden inline-flex items-center justify-center bg-burgundy text-white font-sans text-[13px] uppercase tracking-wider px-12 py-[14px]"
                             >
                                 <span className="absolute top-0 -left-[100%] w-[60%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-25deg] transition-all duration-[800ms] ease-in-out group-hover/btn:left-[200%]" />

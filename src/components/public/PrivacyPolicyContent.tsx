@@ -182,7 +182,7 @@ const sections = [
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <p className="font-medium text-burgundy">Email</p>
-                        <a href="mailto:inoyarouge@gmail.com" className="text-brand-rose hover:underline">inoyarouge@gmail.com</a>
+                        <a href="mailto:customercare@inoya.in" className="text-brand-rose hover:underline">customercare@inoya.in</a>
                     </div>
                     <div>
                         <p className="font-medium text-burgundy">Phone</p>
