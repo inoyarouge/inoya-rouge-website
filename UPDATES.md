@@ -1,3 +1,86 @@
+## 2026-09-14 — Update mobile hero image asset (4th time, new sketch/watercolor style)
+
+**Status:** DONE
+
+New mobile hero image supplied as `public/images/mobile images/a (2).jpeg`
+(834x1885, watercolor/sketch illustration style instead of the previous
+photorealistic image). Copied its content into `mobile hero.jpeg` (the
+filename `src/app/(public)/page.tsx` already references) and deleted the
+stray `a (2).jpeg` file. No code changes needed for the swap itself.
+
+### Files touched
+- `public/images/mobile images/mobile hero.jpeg` — new image asset
+- `public/images/mobile images/a (2).jpeg` — kept (restored after being
+  deleted in error; not a temp file, was named intentionally)
+
+### Note
+The working copy of `mobile hero.jpeg` found at the start of this task was
+actually a stale/reverted older version (matched the file from two updates
+ago, not the most recently pushed one) — confirmed the real new asset was
+the untracked `a (2).jpeg` before swapping.
+
+---
+
+## 2026-09-14 — Add sales/marketing email to contact page
+
+**Status:** DONE
+
+Added a fourth contact entry on the contact page for sales/marketing
+inquiries (`inoyarouge@gmail.com`), alongside the existing Phone, Email
+(customer care), and Instagram entries. Updated the contact grid from
+`md:grid-cols-3` to a mobile-first `grid-cols-1 lg:grid-cols-4` with
+dividers, so 4 items lay out cleanly at all breakpoints.
+
+Follow-up fix: initial layout broke on desktop because the "Sales &
+Marketing" heading wrapped to two lines, misaligning it with the other
+single-line headings. Fixed by giving each heading a fixed `min-h-[64px]`
+so all four columns align regardless of label length, added `gap-x-6` for
+even spacing between columns, and widened the container to `max-w-6xl`.
+
+### Files touched
+- `src/app/(public)/contact/ContactClient.tsx`
+
+---
+
+## 2026-09-14 — Make contact icon circles clickable
+
+**Status:** DONE
+
+The icon circles (Phone, Email, Sales & Marketing, Instagram) on the
+contact page were decorative-only; only the text link below each was
+clickable. Wrapped each icon circle in the same `Link`/href as its label
+(with `aria-label` for accessibility) so clicking the icon also triggers
+the call/email/Instagram action.
+
+### Files touched
+- `src/app/(public)/contact/ContactClient.tsx`
+
+---
+
+## 2026-09-14 — TrustBadges heading color change
+
+**Status:** DONE
+
+`src/components/public/TrustBadges.tsx:20` — "Beauty should never come at the
+cost of your skin." heading color changed from `#720B0B` to `#7A0000`.
+
+---
+
+## 2026-09-14 — Update mobile hero image asset (again)
+
+**Status:** DONE
+
+Replaced `public/images/mobile images/mobile hero.jpeg` with another updated
+version (834x1885, portrait, 92KB). Same filename/path as before, so no code
+changes needed — `src/app/(public)/page.tsx:146` already references this exact
+path for the mobile hero `<Image>`.
+
+### Verified
+- New file confirmed as valid JPEG at 834x1885.
+- No other files reference this image path.
+
+---
+
 ## 2026-09-14 — Subtle text-shadow on shop banner subtext (mobile only)
 
 **Status:** DONE

@@ -41,6 +41,13 @@ const contacts = [
         icon: <Mail className="w-6 h-6" strokeWidth={1.5} />,
     },
     {
+        label: 'Sales & Marketing',
+        value: 'inoyarouge@gmail.com',
+        href: 'mailto:inoyarouge@gmail.com',
+        note: 'For partnership & business inquiries',
+        icon: <Mail className="w-6 h-6" strokeWidth={1.5} />,
+    },
+    {
         label: 'Instagram',
         value: '@inoyarouge',
         href: 'https://www.instagram.com/inoyarouge/',
@@ -125,25 +132,36 @@ export default function ContactClient({
             </div>
 
             {/* Main Content Layout */}
-            <div className="max-w-5xl mx-auto px-4 md:px-8 lg:px-12 py-20">
-                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200">
+            <div className="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-20">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-x-6 divide-y lg:divide-y-0 divide-gray-200">
                     {contacts.map((c, idx) => (
                         <motion.div
                             key={c.label}
-                            className="py-10 md:px-8 flex flex-col items-center text-center group"
+                            className="py-10 md:px-4 flex flex-col items-center text-center group border-gray-200 lg:border-l lg:first:border-l-0"
                             initial={{ opacity: 0, y: 40 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: "-50px" }}
                             transition={{ duration: 0.6, delay: 0.1 * idx, ease: [0.16, 1, 0.3, 1] }}
                         >
-                            <div className="w-14 h-14 rounded-full border border-brand-rose/20 bg-brand-rose/5 flex items-center justify-center text-brand-rose mb-6 transition-transform duration-300 group-hover:scale-110">
-                                {c.icon}
-                            </div>
-                            <h2 className="font-serif text-2xl text-burgundy mb-4">{c.label}</h2>
                             {c.href ? (
                                 <Link
                                     href={c.href}
-                                    className="text-brand-rose font-medium hover:underline text-lg min-h-[28px] inline-flex items-center"
+                                    aria-label={c.label}
+                                    className="w-14 h-14 rounded-full border border-brand-rose/20 bg-brand-rose/5 flex items-center justify-center text-brand-rose mb-6 transition-transform duration-300 group-hover:scale-110"
+                                    {...(c.label === 'Instagram' ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                                >
+                                    {c.icon}
+                                </Link>
+                            ) : (
+                                <div className="w-14 h-14 rounded-full border border-brand-rose/20 bg-brand-rose/5 flex items-center justify-center text-brand-rose mb-6 transition-transform duration-300 group-hover:scale-110">
+                                    {c.icon}
+                                </div>
+                            )}
+                            <h2 className="font-serif text-2xl text-burgundy mb-4 min-h-[64px] flex items-center justify-center leading-tight">{c.label}</h2>
+                            {c.href ? (
+                                <Link
+                                    href={c.href}
+                                    className="text-brand-rose font-medium hover:underline text-lg min-h-[28px] inline-flex items-center break-all"
                                     {...(c.label === 'Instagram' ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                                 >
                                     {c.value}

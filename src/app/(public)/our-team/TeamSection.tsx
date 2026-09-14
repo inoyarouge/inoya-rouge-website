@@ -17,7 +17,7 @@ const team = [
   },
   {
     name: "Mrs. Komal Bajaj Bhotika",
-    role: "Financial Consultant",
+    role: "Financial Consultant & Marketing Lead",
     bio: "Komal Bajaj Bhotika is a Chartered Accountant and Company Secretary serving as the Marketing Lead and Chief Financial Advisor for Inoya Rouge. Bringing over a decade of financial expertise, she manages capital allocation, pricing structures, and financial forecasting to drive profitable growth. Simultaneously, she leads market expansion, digital strategy, and customer acquisition to build brand equity. Her balance of strict financial discipline and market-driven strategy ensures every creative initiative scales sustainably.",
   },
   {

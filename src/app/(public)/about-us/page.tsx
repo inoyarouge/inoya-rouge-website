@@ -31,7 +31,7 @@ const productPillars = [
   },
   {
     icon: '/images/badges/fda-approved.svg',
-    label: 'Dermatologically Considered: created with care for skin health',
+    label: 'Products meets FDA safety guidelines for cosmetic ingredients',
     width: 32,
     height: 32,
   },

@@ -34,7 +34,7 @@ const sections = [
         icon: <CreditCard className="w-6 h-6 text-brand-rose" strokeWidth={1.5} />,
         body: (
             <div className="space-y-4">
-                <p>Shipping charges, if applicable, will be displayed during the checkout process before completing the purchase.</p>
+                <p>Applicable shipping charges, if any, will be clearly displayed or communicated during the purchase process before the order is completed.</p>
             </div>
         )
     },
