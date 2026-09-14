@@ -78,13 +78,29 @@ export default function ShopClient({
 
   // Filter Accordion State
   const [isCategoryOpen, setIsCategoryOpen] = useState(true)
-  const [isCollectionOpen, setIsCollectionOpen] = useState(true)
   const [isPriceOpen, setIsPriceOpen] = useState(true)
 
+  // Which category's nested collection list is expanded in the sidebar.
+  // Only one is ever open; clicking the open one collapses it.
+  const [openCategory, setOpenCategory] = useState<Category | null>(
+    initialCategory === 'All' ? null : initialCategory,
+  )
+
+  // Collections grouped by their category, so each category row can render
+  // its own nested dropdown in the sidebar.
+  const collectionsByCategory = useMemo(() => {
+    const map: Record<string, Collection[]> = {}
+    for (const c of collections) {
+      (map[c.category] ??= []).push(c)
+    }
+    return map
+  }, [collections])
+
+  // Still consumed by the mobile pill row.
   const subFilters = useMemo(() => {
     if (activeCategory === 'All') return []
-    return collections.filter((c) => c.category === activeCategory)
-  }, [collections, activeCategory])
+    return collectionsByCategory[activeCategory] ?? []
+  }, [collectionsByCategory, activeCategory])
 
   const filtered = useMemo(() => {
     let result = products
@@ -115,8 +131,15 @@ export default function ShopClient({
   }, [products, activeCategory, activeCollection, sortBy])
 
   function handleCategoryChange(cat: Category) {
+    // Re-clicking the category that's already open just collapses its list,
+    // leaving the active filter alone.
+    if (cat === activeCategory) {
+      setOpenCategory(prev => (prev === cat ? null : cat))
+      return
+    }
     setActiveCategory(cat)
     setActiveCollection(null)
+    setOpenCategory(cat === 'All' ? null : cat)
   }
 
   const currentHero = heroContent[activeCategory] || heroContent.All
@@ -383,50 +406,65 @@ export default function ShopClient({
                 </div>
                 {isCategoryOpen && (
                   <div className="flex flex-col gap-3.5 overflow-hidden transition-all">
-                    {categories.map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => handleCategoryChange(cat)}
-                        className={`text-left text-[13px] font-sans tracking-wide transition-colors ${activeCategory === cat ? 'text-burgundy font-medium' : 'text-burgundy/50 hover:text-burgundy'}`}
-                      >
-                        {categoryLabels[cat]}
-                      </button>
-                    ))}
+                    {categories.map(cat => {
+                      const catCollections = collectionsByCategory[cat] ?? []
+                      const hasCollections = cat !== 'All' && catCollections.length > 0
+                      const isExpanded = cat === openCategory && hasCollections
+
+                      return (
+                        <div key={cat} className="flex flex-col">
+                          <button
+                            onClick={() => handleCategoryChange(cat)}
+                            className={`flex items-center justify-between w-full text-left text-[13px] font-sans tracking-wide transition-colors ${activeCategory === cat ? 'text-burgundy font-medium' : 'text-burgundy/50 hover:text-burgundy'}`}
+                          >
+                            <span>{categoryLabels[cat]}</span>
+                            {hasCollections && (
+                              <svg
+                                className={`text-burgundy/50 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              >
+                                <path d="M6 9l6 6 6-6" />
+                              </svg>
+                            )}
+                          </button>
+
+                          {/* Nested collections for the active category */}
+                          <AnimatePresence initial={false}>
+                            {isExpanded && (
+                              <motion.div
+                                key={`${cat}-collections`}
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                                className="overflow-hidden"
+                              >
+                                <div className="flex flex-col gap-3 mt-3 pl-4 border-l border-burgundy/10">
+                                  <button
+                                    onClick={() => setActiveCollection(null)}
+                                    className={`text-left text-[12px] font-sans tracking-wide transition-colors ${activeCollection === null ? 'text-burgundy font-medium' : 'text-burgundy/50 hover:text-burgundy'}`}
+                                  >
+                                    ALL {cat.toUpperCase()}
+                                  </button>
+                                  {catCollections.map(col => (
+                                    <button
+                                      key={col.id}
+                                      onClick={() => setActiveCollection(col.name)}
+                                      className={`text-left text-[12px] font-sans tracking-wide transition-colors ${activeCollection === col.name ? 'text-burgundy font-medium' : 'text-burgundy/50 hover:text-burgundy'}`}
+                                    >
+                                      {col.name.toUpperCase()}
+                                    </button>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>
-
-              {/* Collections filter */}
-              {subFilters.length > 0 && (
-                <div className="mb-8">
-                  <div
-                    className="flex items-center justify-between border-b border-burgundy/10 pb-3 mb-4 cursor-pointer"
-                    onClick={() => setIsCollectionOpen(!isCollectionOpen)}
-                  >
-                    <h3 className="text-[13px] font-sans tracking-widest text-burgundy font-medium">COLLECTION</h3>
-                    <svg className={`text-burgundy/50 transition-transform ${isCollectionOpen ? 'rotate-180' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6" /></svg>
-                  </div>
-                  {isCollectionOpen && (
-                    <div className="flex flex-col gap-3.5 overflow-hidden transition-all">
-                      <button
-                        onClick={() => setActiveCollection(null)}
-                        className={`text-left text-[13px] font-sans tracking-wide transition-colors ${activeCollection === null ? 'text-burgundy font-medium' : 'text-burgundy/50 hover:text-burgundy'}`}
-                      >
-                        ALL {activeCategory.toUpperCase()}
-                      </button>
-                      {subFilters.map(col => (
-                        <button
-                          key={col.id}
-                          onClick={() => setActiveCollection(col.name)}
-                          className={`text-left text-[13px] font-sans tracking-wide transition-colors ${activeCollection === col.name ? 'text-burgundy font-medium' : 'text-burgundy/50 hover:text-burgundy'}`}
-                        >
-                          {col.name.toUpperCase()}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Filter Section Removed - Waiting for new selection */}
             </aside>

@@ -1,3 +1,89 @@
+## 2026-09-14 — Nested collection dropdowns in shop sidebar + collection-name product eyebrow
+
+**Status:** DONE
+
+Two related changes to how collections surface on `/shop`:
+
+**1. Sidebar restructure.** The desktop sidebar had two separate stacked
+accordion blocks — `CATEGORY`, and a disconnected `COLLECTION` block that
+only appeared below it once a category was selected. That second block read
+as an unrelated "tab" and hid the collection→category relationship. Removed
+it entirely; each category's collections now nest as an inline indented
+dropdown directly under that category's own row in the CATEGORY list.
+
+Behaviour: only the *active* category expands (clicking another category
+switches the filter and moves the expansion). This needed no new state —
+`handleCategoryChange` already resets `activeCollection`, so expansion is
+driven by `activeCategory`. Dead `isCollectionOpen` state removed.
+
+Mobile is deliberately unchanged — there is no sidebar at mobile width, so
+the horizontal pill row remains the mobile collection picker.
+
+**2. Product card eyebrow.** The small uppercase line above the product name
+printed the category (`LIPS`). It now prints the collection name (`KYSMÉ`),
+falling back to the category when `product.collection` is null/empty. Used
+`||` rather than `??` so an empty string also falls back. No query, type, or
+DB change was needed — `products.collection` is a denormalized name string
+already present on every card via the existing `select('*')`.
+
+### Files touched
+- `src/components/public/ShopClient.tsx` — nested collections under each category; removed standalone COLLECTION block and `isCollectionOpen` state
+- `src/components/public/ProductCard.tsx` — eyebrow shows collection with category fallback (shop + default variants; curated has no eyebrow)
+
+### Follow-up fix — dropdown would not close
+First pass tied expansion to `activeCategory` alone, so clicking the already-open
+category just re-set the same value and the list could never be collapsed.
+Added explicit `openCategory` state: clicking the open category toggles it shut
+(leaving the active filter untouched), while switching category moves the
+expansion and still keeps only one open at a time. All three category entry
+points (sidebar, mobile dropdown, empty-state reset) route through
+`handleCategoryChange`, so they stay in sync. Click sequences simulated and
+verified: open→collapse→reopen, switch category, and ALL PRODUCTS.
+
+### Verified
+- `npx tsc --noEmit` clean; `npm run build` succeeds (all shop routes compile).
+- Rendered `/shop/lips` HTML confirms: single `CATEGORY` heading, no standalone
+  `COLLECTION` block, LIPS active with caret rotated and its collections
+  (`ALL LIPS`, `LIPSTICK`, `LIQUID LIPSTICK`, `LIPBALM`) nested in an indented
+  `pl-4 border-l` list directly beneath it.
+- `ALL PRODUCTS` renders no caret and no nested list, as intended.
+- Eyebrow renders `Liquid Lipstick` / `Lipstick` / `Lipbalm` on the three live
+  products instead of `LIPS`. Fallback expression unit-checked against null,
+  empty-string and undefined — all fall back to category (`||` not `??`, so
+  empty string is covered).
+- Mobile pill row unchanged and still rendering its four pills.
+
+### Note on current data
+Only the **Lips** category has collection rows (Lipstick, Liquid Lipstick,
+Lipbalm — created 2026-09-14). Eyes and Face have none, so those categories
+correctly render with no caret and no dropdown until collections are added for
+them in the admin. This is the intended empty state, not a bug.
+
+---
+
+## 2026-09-14 — Update "Our Products" image (about-us page, mobile + desktop)
+
+**Status:** DONE
+
+User replaced `public/images/mobile images/our products mobile.jpeg` with a
+new product flat-lay image (bottle/jar/lipstick with 5 trust-badge icons:
+Skin-Friendly, Cruelty-Free, FDA safety, Paraben Conscious, Inspired by
+Nature). Filename unchanged, so it was already live on mobile via the
+existing `mobileSrc` reference at
+`src/app/(public)/about-us/page.tsx:290` (Row component, "Our Products"
+section) — no code changes needed for the mobile swap.
+
+Desktop was still showing the old May 3 image at
+`public/images/about us/our products.jpeg` (separate file, referenced via
+`src` at `src/app/(public)/about-us/page.tsx:289`). Per user confirmation,
+copied the same new image over the desktop file so both breakpoints match.
+
+### Files touched
+- `public/images/mobile images/our products mobile.jpeg` — new image (already in place, user-supplied)
+- `public/images/about us/our products.jpeg` — overwritten with same new image to match mobile
+
+---
+
 ## 2026-09-14 — Update mobile hero image asset (4th time, new sketch/watercolor style)
 
 **Status:** DONE

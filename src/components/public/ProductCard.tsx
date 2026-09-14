@@ -50,9 +50,9 @@ export default function ProductCard({ product, variant = 'default' }: { product:
           </div>
 
           <div className="flex flex-col mt-4 px-1">
-            {/* Sub-category / Type */}
+            {/* Collection name, falling back to category */}
             <div className="text-[10px] font-sans tracking-[2px] text-gray-500 uppercase mb-1">
-              {product.category}
+              {product.collection || product.category}
             </div>
 
             {/* Product Name — Playfair Display regular (font-display), left aligned */}
@@ -208,7 +208,7 @@ export default function ProductCard({ product, variant = 'default' }: { product:
         )}
       </div>
       <div className="mt-4 space-y-1">
-        <p className="text-[10px] text-gray-400 uppercase tracking-widest">{product.category}</p>
+        <p className="text-[10px] text-gray-400 uppercase tracking-widest">{product.collection || product.category}</p>
         <h3 className="font-serif text-lg leading-tight">{product.name}</h3>
         <div className="flex items-center justify-between pt-1">
           {priceInfo.hasDiscount ? (
